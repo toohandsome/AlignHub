@@ -1,0 +1,166 @@
+2026-03-15 22:19:54,128 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b54584e53c0b0c1494a97a7a92a0 root_id=om_x100b54584e9a04acc4e3f9e6a12f0f4 parent_id=om_x100b54584e9a04acc4e3f9e6a12f0f4 thread_id=omt_1ad348cc5e8fdbe2
+2026-03-15 22:19:54,166 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b54584e53c0b0c1494a97a7a92a0 root_id=om_x100b54584e9a04acc4e3f9e6a12f0f4 parent_id=om_x100b54584e9a04acc4e3f9e6a12f0f4 thread_id=omt_1ad348cc5e8fdbe2
+2026-03-15 22:19:54,862 WARNING [app.feishu] Feishu membership probe: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be agent=张威 in_chat=True
+2026-03-15 22:19:54,862 WARNING [app.feishu] Feishu membership probe: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be agent=陈练 in_chat=True
+2026-03-15 22:19:54,862 WARNING [app.feishu] Feishu auto-bind session: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be topic_root=om_x100b54584e9a04acc4e3f9e6a12f0f4 mode=chat_members selected_agents=张威,陈练
+2026-03-15 22:19:55,230 WARNING [app.feishu] Feishu topic resolved from thread history: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be thread_id=omt_1ad348cc5e8fdbe2 text=None
+2026-03-15 22:19:56,327 WARNING [app.feishu] Feishu session auto-created: session_id=46c84457-7987-4436-b7c5-d3be4325c39a chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be topic_root=om_x100b54584e9a04acc4e3f9e6a12f0f4 name=飞书话题 · 张威、陈练 topic=飞书话题讨论
+2026-03-15 22:19:57,505 WARNING [app.feishu] Feishu topic resolved from thread history: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be thread_id=omt_1ad348cc5e8fdbe2 text=None
+2026-03-15 22:20:11,712 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b54584e53c0b0c1494a97a7a92a0 root_id=om_x100b54584e9a04acc4e3f9e6a12f0f4 parent_id=om_x100b54584e9a04acc4e3f9e6a12f0f4 thread_id=omt_1ad348cc5e8fdbe2
+2026-03-15 22:27:50,635 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b545850a894a8c2c54716b6e1f07 root_id=om_x100b5458522ae8a4c10d398a3b0cc43 parent_id=om_x100b5458522ae8a4c10d398a3b0cc43 thread_id=omt_1ad34907504f5bbc
+2026-03-15 22:27:50,642 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b545850a894a8c2c54716b6e1f07 root_id=om_x100b5458522ae8a4c10d398a3b0cc43 parent_id=om_x100b5458522ae8a4c10d398a3b0cc43 thread_id=omt_1ad34907504f5bbc
+2026-03-15 22:27:51,332 WARNING [app.feishu] Feishu membership probe: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be agent=张威 in_chat=True
+2026-03-15 22:27:51,333 WARNING [app.feishu] Feishu membership probe: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be agent=陈练 in_chat=True
+2026-03-15 22:27:51,333 WARNING [app.feishu] Feishu auto-bind session: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be topic_root=om_x100b5458522ae8a4c10d398a3b0cc43 mode=chat_members selected_agents=张威,陈练
+2026-03-15 22:27:51,333 WARNING [app.feishu] Feishu thread history request: https://open.feishu.cn/open-apis/im/v1/messages?container_id_type=thread&container_id=omt_1ad34907504f5bbc&sort_type=ByCreateTimeAsc&page_size=1
+2026-03-15 22:27:51,732 WARNING [app.feishu] Feishu thread history response: {"code": 0, "data": {"has_more": true, "items": [{"body": {"content": "{\"title\":\"\",\"content\":[[{\"tag\":\"text\",\"text\":\"java好还是go好\",\"style\":[]}]]}"}, "chat_id": "oc_6f4dda3f9f7f45ee90babaf29c52b2be", "create_time": "1773584846561", "deleted": false, "message_id": "om_x100b5458522ae8a4c10d398a3b0cc43", "msg_type": "post", "sender": {"id": "ou_4d3b46d42beacf55b7bd64fc0f12700c", "id_type": "open_id", "sender_type": "user", "tenant_key": "1a19d1981d459b92"}, "thread_id": "omt_1ad34907504f5bbc", "update_time": "1773584846561", "updated": false}], "page_token": "4cXSlmN7uFAnWWU5yfIGMEBn3FmzPIX8hLRtP-7Su155CesX3Ve62ODwHQxF8CWiRHmCBtnlW5xv0nrGaa_fUUBrRaSc3ruoxYX1xkVr3gDgBFqE9Xw4z3OWrP4lxHJB"}, "msg": "success"}
+2026-03-15 22:27:51,732 WARNING [app.feishu] Feishu topic resolved from thread history: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be thread_id=omt_1ad34907504f5bbc text=java好还是go好
+2026-03-15 22:27:51,747 WARNING [app.feishu] Feishu session auto-created: session_id=9e2f27c7-ff49-4a48-89d2-353b72f9a998 chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be topic_root=om_x100b5458522ae8a4c10d398a3b0cc43 name=飞书话题 · 张威、陈练 topic=java好还是go好
+2026-03-15 22:27:52,518 WARNING [app.feishu] Feishu thread history request: https://open.feishu.cn/open-apis/im/v1/messages?container_id_type=thread&container_id=omt_1ad34907504f5bbc&sort_type=ByCreateTimeAsc&page_size=1
+2026-03-15 22:27:52,974 WARNING [app.feishu] Feishu thread history response: {"code": 0, "data": {"has_more": true, "items": [{"body": {"content": "{\"title\":\"\",\"content\":[[{\"tag\":\"text\",\"text\":\"java好还是go好\",\"style\":[]}]]}"}, "chat_id": "oc_6f4dda3f9f7f45ee90babaf29c52b2be", "create_time": "1773584846561", "deleted": false, "message_id": "om_x100b5458522ae8a4c10d398a3b0cc43", "msg_type": "post", "sender": {"id": "ou_4d3b46d42beacf55b7bd64fc0f12700c", "id_type": "open_id", "sender_type": "user", "tenant_key": "1a19d1981d459b92"}, "thread_id": "omt_1ad34907504f5bbc", "update_time": "1773584846561", "updated": false}], "page_token": "4cXSlmN7uFAnWWU5yfIGMLysobVV5O8S6CSdUhBH1U1EM19fgpnu18bfFdoVq8gpHZgMixiP5s_rZcNbghL5XevdFUbD1Lq-N6cZoJpnpGLBBV13wOStEkvu8SJb1HaG"}, "msg": "success"}
+2026-03-15 22:27:52,974 WARNING [app.feishu] Feishu topic resolved from thread history: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be thread_id=omt_1ad34907504f5bbc text=java好还是go好
+2026-03-15 22:28:05,933 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:28:07,906 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:28:08,672 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b545850a894a8c2c54716b6e1f07 root_id=om_x100b5458522ae8a4c10d398a3b0cc43 parent_id=om_x100b5458522ae8a4c10d398a3b0cc43 thread_id=omt_1ad34907504f5bbc
+2026-03-15 22:28:08,742 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b545850a894a8c2c54716b6e1f07 root_id=om_x100b5458522ae8a4c10d398a3b0cc43 parent_id=om_x100b5458522ae8a4c10d398a3b0cc43 thread_id=omt_1ad34907504f5bbc
+2026-03-15 22:28:17,318 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:28:48,177 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:28:57,452 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:29:10,552 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:29:19,869 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:29:37,081 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:30:03,170 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:30:15,859 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:30:40,581 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:30:45,991 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:31:22,740 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:31:31,879 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:31:40,194 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:32:00,120 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:32:14,488 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:32:24,759 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:32:36,448 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:32:46,330 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:32:58,065 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:33:05,705 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:33:09,483 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:33:19,077 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 22:33:31,848 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:17:42,282 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b545897a9f134c2d9d7f8b114aaf root_id=om_x100b54589618d4a0c49d2a61049c329 parent_id=om_x100b54589618d4a0c49d2a61049c329 thread_id=omt_1ad34544738f1be5
+2026-03-15 23:17:42,311 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b545897a9f134c2d9d7f8b114aaf root_id=om_x100b54589618d4a0c49d2a61049c329 parent_id=om_x100b54589618d4a0c49d2a61049c329 thread_id=omt_1ad34544738f1be5
+2026-03-15 23:17:43,025 WARNING [app.feishu] Feishu membership probe: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be agent=陈练 in_chat=True
+2026-03-15 23:17:43,025 WARNING [app.feishu] Feishu membership probe: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be agent=张威 in_chat=True
+2026-03-15 23:17:43,025 WARNING [app.feishu] Feishu auto-bind session: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be topic_root=om_x100b54589618d4a0c49d2a61049c329 mode=chat_members selected_agents=陈练,张威
+2026-03-15 23:17:43,026 WARNING [app.feishu] Feishu thread history request: https://open.feishu.cn/open-apis/im/v1/messages?container_id_type=thread&container_id=omt_1ad34544738f1be5&sort_type=ByCreateTimeAsc&page_size=1
+2026-03-15 23:17:43,391 WARNING [app.feishu] Feishu thread history response: {"code": 0, "data": {"has_more": true, "items": [{"body": {"content": "{\"title\":\"\",\"content\":[[{\"tag\":\"text\",\"text\":\"java好还是go好\",\"style\":[]}]]}"}, "chat_id": "oc_6f4dda3f9f7f45ee90babaf29c52b2be", "create_time": "1773587853437", "deleted": false, "message_id": "om_x100b54589618d4a0c49d2a61049c329", "msg_type": "post", "sender": {"id": "ou_44ebbd220ad4f647af69c1c4be459040", "id_type": "open_id", "sender_type": "user", "tenant_key": "1a19d1981d459b92"}, "thread_id": "omt_1ad34544738f1be5", "update_time": "1773587853437", "updated": false}], "page_token": "4cXSlmN7uFAnWWU5yfIGMNOLHxgT9hMH_dv0QIETjUVFS_jvDOhVErCue_VCC3aQkPc5G3S0xoJcirsoIzdNELhZS1eNg8QUsn3s3pnielP0eT9NLspRRPi_3Z8ou2jH"}, "msg": "success"}
+2026-03-15 23:17:43,391 WARNING [app.feishu] Feishu topic resolved from thread history: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be thread_id=omt_1ad34544738f1be5 text=java好还是go好
+2026-03-15 23:17:43,404 WARNING [app.feishu] Feishu session auto-created: session_id=2f18658c-48e0-4c10-89eb-0195d8bd0360 chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be topic_root=om_x100b54589618d4a0c49d2a61049c329 name=飞书话题 · 陈练、张威 topic=java好还是go好
+2026-03-15 23:17:44,152 WARNING [app.feishu] Feishu thread history request: https://open.feishu.cn/open-apis/im/v1/messages?container_id_type=thread&container_id=omt_1ad34544738f1be5&sort_type=ByCreateTimeAsc&page_size=1
+2026-03-15 23:17:44,511 WARNING [app.feishu] Feishu thread history response: {"code": 0, "data": {"has_more": true, "items": [{"body": {"content": "{\"title\":\"\",\"content\":[[{\"tag\":\"text\",\"text\":\"java好还是go好\",\"style\":[]}]]}"}, "chat_id": "oc_6f4dda3f9f7f45ee90babaf29c52b2be", "create_time": "1773587853437", "deleted": false, "message_id": "om_x100b54589618d4a0c49d2a61049c329", "msg_type": "post", "sender": {"id": "ou_44ebbd220ad4f647af69c1c4be459040", "id_type": "open_id", "sender_type": "user", "tenant_key": "1a19d1981d459b92"}, "thread_id": "omt_1ad34544738f1be5", "update_time": "1773587853437", "updated": false}], "page_token": "4cXSlmN7uFAnWWU5yfIGMEvW15UDcJmhDUu6_mk9RgBZ1x6uTju4pVt3Q-4PRzIiG82E6Ir9ED1NAQK7Io3bJNZ_kT4PfqmrccXbWci6FDYQxdeMBxJTkb3cbnz9IcZy"}, "msg": "success"}
+2026-03-15 23:17:44,512 WARNING [app.feishu] Feishu topic resolved from thread history: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be thread_id=omt_1ad34544738f1be5 text=java好还是go好
+2026-03-15 23:17:53,132 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:17:54,593 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:01,376 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b545897a9f134c2d9d7f8b114aaf root_id=om_x100b54589618d4a0c49d2a61049c329 parent_id=om_x100b54589618d4a0c49d2a61049c329 thread_id=omt_1ad34544738f1be5
+2026-03-15 23:18:01,380 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b545897a9f134c2d9d7f8b114aaf root_id=om_x100b54589618d4a0c49d2a61049c329 parent_id=om_x100b54589618d4a0c49d2a61049c329 thread_id=omt_1ad34544738f1be5
+2026-03-15 23:18:01,618 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:07,816 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b5458943540a8c2ceda240d7fbba root_id=om_x100b54589618d4a0c49d2a61049c329 parent_id=om_x100b54589618d4a0c49d2a61049c329 thread_id=omt_1ad34544738f1be5
+2026-03-15 23:18:07,830 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b5458943540a8c2ceda240d7fbba root_id=om_x100b54589618d4a0c49d2a61049c329 parent_id=om_x100b54589618d4a0c49d2a61049c329 thread_id=omt_1ad34544738f1be5
+2026-03-15 23:18:09,534 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:17,927 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:17,936 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:19,727 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:23,477 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:26,641 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b5458943540a8c2ceda240d7fbba root_id=om_x100b54589618d4a0c49d2a61049c329 parent_id=om_x100b54589618d4a0c49d2a61049c329 thread_id=omt_1ad34544738f1be5
+2026-03-15 23:18:26,734 WARNING [app.feishu] Feishu incoming conversation: chat_id=oc_6f4dda3f9f7f45ee90babaf29c52b2be chat_type=group message_id=om_x100b5458943540a8c2ceda240d7fbba root_id=om_x100b54589618d4a0c49d2a61049c329 parent_id=om_x100b54589618d4a0c49d2a61049c329 thread_id=omt_1ad34544738f1be5
+2026-03-15 23:18:31,922 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:38,880 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:40,183 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:46,815 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:53,108 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:18:58,607 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:19:04,507 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:19:07,472 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:19:13,436 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-15 23:19:24,884 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:37:57,018 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:38:18,792 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:38:41,114 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:39:10,140 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:39:39,942 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:40:03,924 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:40:24,283 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:41:00,670 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:42:20,822 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:42:56,353 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:43:06,155 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:43:46,385 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:44:00,050 INFO [httpx] HTTP Request: POST http://testserver/api/v1/demo/bootstrap "HTTP/1.1 200 OK"
+2026-03-16 15:44:00,069 INFO [httpx] HTTP Request: POST http://testserver/api/v1/chat-sessions/84065740-6a1a-4774-a4ed-a68c4ea81fbf/start "HTTP/1.1 200 OK"
+2026-03-16 15:44:00,082 INFO [httpx] HTTP Request: GET http://testserver/api/v1/runs/815aeaf6-ce7e-4163-a86f-d80b54ec107b "HTTP/1.1 200 OK"
+2026-03-16 15:44:00,100 INFO [httpx] HTTP Request: GET http://testserver/api/v1/runs "HTTP/1.1 200 OK"
+2026-03-16 15:44:00,110 INFO [httpx] HTTP Request: GET http://testserver/api/v1/runs/815aeaf6-ce7e-4163-a86f-d80b54ec107b/events "HTTP/1.1 200 OK"
+2026-03-16 15:44:00,116 INFO [httpx] HTTP Request: GET http://testserver/api/v1/runs/815aeaf6-ce7e-4163-a86f-d80b54ec107b/tool-logs "HTTP/1.1 200 OK"
+2026-03-16 15:44:00,118 ERROR [sqlalchemy.pool.impl.NullPool] Exception closing connection <AdaptedConnection <aiosqlite.core.Connection object at 0x000000000A8E1A60>>
+Traceback (most recent call last):
+  File "D:\Program\anaconda3\Lib\site-packages\sqlalchemy\pool\base.py", line 376, in _close_connection
+    self._dialect.do_close(connection)
+  File "D:\Program\anaconda3\Lib\site-packages\sqlalchemy\engine\default.py", line 707, in do_close
+    dbapi_connection.close()
+  File "D:\Program\anaconda3\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 275, in close
+    self.await_(self._connection.close())
+  File "D:\Program\anaconda3\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 131, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Program\anaconda3\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\Program\anaconda3\Lib\site-packages\aiosqlite\core.py", line 206, in close
+    await self._execute(self._conn.close)
+  File "D:\Program\anaconda3\Lib\site-packages\aiosqlite\core.py", line 160, in _execute
+    return await future
+           ^^^^^^^^^^^^
+asyncio.exceptions.CancelledError
+2026-03-16 15:44:27,930 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:45:19,329 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:45:45,054 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:46:26,799 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:47:01,658 INFO [httpx] HTTP Request: POST https://apis.iflow.cn/v1/chat/completions "HTTP/1.1 200 "
+2026-03-16 15:47:02,426 ERROR [asyncio] Task exception was never retrieved
+future: <Task finished name='Task-234' coro=<FeishuBridgeService.handle_run_event() done, defined at C:\Users\mysgk\Desktop\agentscope_doc\doc.agentscope.io\zh_CN\backend\app\feishu.py:474> exception=RuntimeError('Executor shutdown has been called')>
+Traceback (most recent call last):
+  File "D:\Program Files\Python312\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Program Files\Python312\Lib\asyncio\base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Program Files\Python312\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "D:\Program Files\Python312\Lib\asyncio\runners.py", line 123, in run
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\mysgk\Desktop\agentscope_doc\doc.agentscope.io\zh_CN\backend\app\feishu.py", line 510, in handle_run_event
+    await self.send_message(
+  File "C:\Users\mysgk\Desktop\agentscope_doc\doc.agentscope.io\zh_CN\backend\app\feishu.py", line 595, in send_message
+    await self._request_json(
+  File "C:\Users\mysgk\Desktop\agentscope_doc\doc.agentscope.io\zh_CN\backend\app\feishu.py", line 693, in _request_json
+    return await asyncio.to_thread(_request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Program Files\Python312\Lib\asyncio\threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Program Files\Python312\Lib\asyncio\base_events.py", line 856, in run_in_executor
+    self._check_default_executor()
+  File "D:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_default_executor
+    raise RuntimeError('Executor shutdown has been called')
+RuntimeError: Executor shutdown has been called
