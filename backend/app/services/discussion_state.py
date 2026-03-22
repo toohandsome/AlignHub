@@ -47,6 +47,10 @@ def build_history_message(
     explicit_saliency_score: float | None = None,
     human_priority: str | None = None,
 ) -> dict[str, Any]:
+    """把一条原始发言包装成统一的 discussion_history 记录。
+
+    这里会顺带计算 saliency 和 message_kind，供后续裁剪、召回和摘要使用。
+    """
     score, inferred_kind = estimate_message_saliency(
         {
             "agent_id": agent_id,
@@ -166,6 +170,10 @@ def merge_unique_items(existing: list[str] | None, incoming: list[str] | None, *
 
 
 def apply_semantic_ttl(state: dict[str, Any] | None, *, round_no: int, max_rounds: int | None = None) -> dict[str, Any]:
+    """对结构化状态执行语义 TTL。
+
+    会根据轮次阶段逐步归档长期未被提及、重要性较低的开放问题和候选项。
+    """
     updated = dict(state or {})
     next_focus = str(updated.get("next_focus") or "").strip()
     phase = 0.0
@@ -321,6 +329,10 @@ def extract_state_patch_proposals(
     agent_name: str,
     source_message_id: str,
 ) -> tuple[str, list[dict[str, Any]]]:
+    """从 Agent 公开发言尾部提取状态补丁提案。
+
+    返回值由两部分组成：去掉补丁块后的公开文本，以及结构化的 patch proposal 列表。
+    """
     marker = "[STATE PATCH PROPOSAL]"
     text = (raw_text or "").strip()
     marker_index = text.find(marker)
@@ -363,6 +375,7 @@ def extract_state_patch_proposals(
 
 
 def group_patch_conflicts(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """识别 patch 之间的直接冲突和语义冲突。"""
     items = [dict(item) for item in candidates if isinstance(item, dict)]
     seen: dict[tuple[str, str], dict[str, Any]] = {}
     for item in items:
@@ -412,6 +425,10 @@ def _semantic_match(patch_value: str, state_value: str) -> bool:
 
 
 def apply_patch_to_structured_state(state: dict[str, Any] | None, patch: dict[str, Any], *, round_no: int, source: str) -> dict[str, Any]:
+    """把单个 patch 应用到 structured_state 上。
+
+    这里只处理规则明确的字段变更；更高风险的提案需要 Moderator 显式裁决。
+    """
     updated = dict(state or {})
     target = str(patch.get("target_field") or "")
     operation = str(patch.get("operation") or "")
@@ -552,6 +569,7 @@ def resolve_unresolved_conflicts(
     decision_reason: str | None,
     round_no: int,
 ) -> tuple[list[str], list[dict[str, Any]], list[dict[str, Any]]]:
+    """把主持人未明确裁决的冲突提案提升为 unresolved_conflict。"""
     state = dict(structured_state or {})
     conflicted = [dict(item) for item in list(candidates or []) if str(item.get("status") or "") == "conflicted"]
     if not conflicted:
@@ -633,6 +651,7 @@ def structured_state_preview(state: dict[str, Any] | None) -> dict[str, Any]:
 def apply_safe_state_patch_candidates(
     state: Mapping[str, Any],
 ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
+    """自动应用低风险 patch，并把其余提案留给主持人裁决。"""
     structured_state = dict(state.get("structured_state") or {})
     patch_log = list(state.get("state_patch_log") or [])
     remaining: list[dict[str, Any]] = []
@@ -641,6 +660,7 @@ def apply_safe_state_patch_candidates(
         operation = str(candidate.get("operation") or "")
         target_field = str(candidate.get("target_field") or "")
         can_auto_apply = (
+            # 只对低风险、纯新增类提案做自动采纳，避免运行时擅自改写核心共识。
             str(candidate.get("status") or "pending") != "conflicted"
             and risk_level == "low"
             and operation == "add"
@@ -776,6 +796,7 @@ def merge_structured_state(
     participant_names: list[str],
     round_summary: dict[str, Any],
 ) -> dict[str, Any]:
+    """把主持人决策与当前结构化状态合并成下一轮可复用的 shared state。"""
     state = dict(previous or {})
     state["topic"] = topic
     state["rounds_completed"] = max(int(state.get("rounds_completed") or 0), round_no)
@@ -868,6 +889,10 @@ def prepare_private_working_memory(
     latest_message: dict[str, Any] | None,
     structured_state: dict[str, Any] | None,
 ) -> dict[str, Any]:
+    """为单个 Agent 生成本轮私有工作记忆。
+
+    这部分内容不会直接进入共享历史，只有 Agent 在公开发言中说出的部分才会外显。
+    """
     memory = dict(existing or {})
     next_focus = shorten_text(str((structured_state or {}).get("next_focus") or "").strip(), 120)
     latest_speaker = shorten_text(str((latest_message or {}).get("agent_name") or "").strip(), 80)

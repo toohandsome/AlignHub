@@ -15,6 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 class RunLifecycleService:
+    """负责 Run 的生命周期管理。
+
+    包括启动、恢复、暂停、恢复执行、停止、删除，以及后台任务跟踪。
+    """
+
     def __init__(self, *, event_service: Any, engine: Any, persistence: RunPersistenceService) -> None:
         self.event_service = event_service
         self.engine = engine
@@ -36,6 +41,7 @@ class RunLifecycleService:
         task.add_done_callback(_cleanup)
 
     async def startup(self) -> None:
+        """启动运行时，并在配置允许时恢复历史活动 Run。"""
         await self.engine.startup()
         from app.core import settings
 
@@ -43,6 +49,10 @@ class RunLifecycleService:
             await self.recover_active_runs()
 
     async def shutdown(self) -> None:
+        """优雅关闭生命周期服务。
+
+        这里会先取消所有后台 Run 任务，再关闭底层 DiscussionEngine。
+        """
         self.engine._shutdown_requested = True
         for run_id, task in list(self._tasks.items()):
             if task.done():
@@ -59,6 +69,7 @@ class RunLifecycleService:
         await self.engine.shutdown()
 
     async def recover_active_runs(self) -> list[str]:
+        """根据数据库状态和 LangGraph checkpoint 尝试恢复活动 Run。"""
         recovered: list[str] = []
         runs = await self.persistence.list_runs_for_recovery()
         for run in runs:
@@ -73,6 +84,7 @@ class RunLifecycleService:
                 continue
 
             if run.status in {"draft", "running"}:
+                # 恢复策略按优先级区分：interrupt 恢复 > checkpoint 续跑 > 全新执行。
                 if has_interrupt:
                     self.track_task(
                         run.id,
@@ -89,6 +101,10 @@ class RunLifecycleService:
         return recovered
 
     async def start(self, session_id: str, *, notify_feishu: bool = True) -> Any:
+        """启动一个新的 Run。
+
+        对同一 Session 使用锁，避免并发点击创建出多个活动 Run。
+        """
         await self.engine.startup()
         async with self.session_lock(session_id):
             try:
@@ -99,6 +115,7 @@ class RunLifecycleService:
         return run
 
     async def stop(self, run_id: str, *, source: str = "user") -> None:
+        """停止运行中的 Run，并尽量把状态落成 stopped。"""
         task = self._tasks.get(run_id)
         if task and not task.done():
             control = self.engine.control(run_id)
@@ -151,6 +168,10 @@ class RunLifecycleService:
         return run
 
     async def resume(self, run_id: str, *, message: str | None = None, source: str = "user", mark_important: bool = False) -> Any | None:
+        """恢复暂停的 Run。
+
+        如果后台任务已经退出，会根据 checkpoint / interrupt 状态自动选择恢复方式。
+        """
         run = await self.persistence.get_run(run_id)
         if not run:
             return None
@@ -189,6 +210,7 @@ class RunLifecycleService:
         return run
 
     async def inject_user_input(self, run_id: str, *, message: str, source: str = "user", pause: bool = False, mark_important: bool = False) -> Any | None:
+        """向活动 Run 注入用户补充信息；可选同时触发暂停。"""
         if not (message or "").strip():
             raise ValueError("Message is required")
         run = await self.persistence.get_run(run_id)
@@ -210,6 +232,7 @@ class RunLifecycleService:
         return run
 
     async def delete_run(self, run_id: str) -> bool:
+        """删除 Run 相关记录，并同步清理工作区与检索侧车数据。"""
         task = self._tasks.get(run_id)
         if task and not task.done():
             await self.stop(run_id, source="delete")

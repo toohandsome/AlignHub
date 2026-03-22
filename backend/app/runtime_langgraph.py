@@ -41,6 +41,8 @@ from app.services.workspace import cleanup_run_workspace_async, prepare_run_work
 
 
 class DiscussionState(TypedDict, total=False):
+    """LangGraph 讨论图在节点间流转的共享状态。"""
+
     run_id: str
     session_id: str
     session_name: str
@@ -63,6 +65,11 @@ class DiscussionState(TypedDict, total=False):
 
 
 class DiscussionEngine:
+    """LangGraph 运行时封装。
+
+    负责构图、Checkpoint、运行控制恢复，以及把节点逻辑委托给 DiscussionTurnService。
+    """
+
     def __init__(
         self,
         event_service: EventService,
@@ -116,6 +123,10 @@ class DiscussionEngine:
         return {"configurable": {"thread_id": run_id}}
 
     def _build_graph(self):
+        """构建讨论执行图。
+
+        主流程为：轮次开始 -> 暂停检查 -> 注入用户输入 -> Agent 发言 -> 主持人裁决 -> 下一轮/报告。
+        """
         if self._checkpointer is None:
             raise RuntimeError("LangGraph checkpointer is not initialized")
         graph = StateGraph(DiscussionState)
@@ -189,11 +200,13 @@ class DiscussionEngine:
         return await self.persistence.load_run(db, run_id)
 
     def _initial_state(self, run: DiscussionRun, workspace_root: str) -> DiscussionState:
+        """把数据库中的 Run/Session 信息展开成首次执行所需的完整状态。"""
         links = sorted(run.session.agents, key=lambda item: item.speak_order)
         ordered_agents = [link.agent for link in links]
         if not ordered_agents:
             raise ValueError("Chat session has no agents")
 
+        # Moderator 单独走主持人节点，常规讨论节点只轮转非主持人 Agent。
         moderator_agent = next((agent for agent in ordered_agents if agent.is_moderator), None) or ordered_agents[0]
         discussion_agents = [agent for agent in ordered_agents if agent.id != moderator_agent.id] or [moderator_agent]
 
@@ -261,6 +274,10 @@ class DiscussionEngine:
         return {}
 
     async def _pause_gate_node(self, state: DiscussionState) -> dict[str, Any]:
+        """在每次继续执行前检查是否进入暂停态。
+
+        一旦暂停，会先广播状态和未宣告输入，再通过 interrupt 把图挂起。
+        """
         run_id = state["run_id"]
         round_no = state["round_no"]
         control = self.control(run_id)
@@ -282,6 +299,7 @@ class DiscussionEngine:
         return {}
 
     async def _inject_inputs_node(self, state: DiscussionState) -> dict[str, Any]:
+        """把挂起期间积累的用户输入转成讨论历史，并在必要时写入长期关注点。"""
         run_id = state["run_id"]
         round_no = state["round_no"]
         control = self.control(run_id)
@@ -304,6 +322,7 @@ class DiscussionEngine:
             history.append(
                 history_item
             )
+            # 重点输入不仅进入 history，也会提升为 structured_state 中的长期锚点。
             if item.mark_important:
                 structured_state = _pin_user_focus_point(structured_state, item.text)
             if not item.announced:
@@ -353,6 +372,12 @@ class DiscussionEngine:
         return self.turn_service.parse_moderator_decision(raw_text, state)
 
     async def execute(self, run_id: str, command: Command | None = None, *, continue_from_checkpoint: bool = False) -> None:
+        """执行或恢复一个 Run。
+
+        - 首次执行：从数据库装载 Session 并生成初始状态
+        - 从 checkpoint 恢复：直接续跑图状态
+        - 从 interrupt 恢复：携带 Command.resume 继续执行
+        """
         if self._graph is None:
             await self.startup()
         control = self.control(run_id)
@@ -360,6 +385,7 @@ class DiscussionEngine:
         try:
             payload: DiscussionState | Command | None
             if command is None and not continue_from_checkpoint:
+                # 首次启动：以数据库中的 Run/Session 生成初始状态。
                 async with SessionLocal() as db:
                     run = await self._load_run(db, run_id)
                     if not run:
@@ -369,10 +395,12 @@ class DiscussionEngine:
                     raise ValueError("Run not found")
                 await self.notifier.publish_running(run_id)
             elif command is None:
+                # 续跑 checkpoint：图状态已存在，此处只需把运行状态切回 running。
                 if not await self.persistence.mark_run_running(run_id):
                     raise ValueError("Run not found")
                 payload = None
             else:
+                # 从 interrupt 恢复时，把外部 Command 直接交给 LangGraph。
                 payload = command
 
             result = await self._graph.ainvoke(payload, config=self._graph_config(run_id))
@@ -390,6 +418,7 @@ class DiscussionEngine:
             await self.notifier.publish_error(run_id, message=str(exc))
             raise
         finally:
+            # 只有真正进入终态时，才清理控制状态、检索侧车和工作区。
             if await self._is_terminal_run(run_id):
                 await control.clear_runtime_state()
                 await self.clear_persisted_control_state(run_id)
@@ -403,6 +432,11 @@ class DiscussionEngine:
 
 
 class RunManager:
+    """对外暴露的运行管理门面。
+
+    路由层和 Feishu 层只需要依赖它，不需要直接感知 LangGraph 图细节。
+    """
+
     def __init__(self, event_service: EventService) -> None:
         self.persistence = RunPersistenceService()
         self.notifier = RunExecutionNotifier(event_service)

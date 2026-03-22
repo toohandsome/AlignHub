@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import asyncio
 import json
@@ -117,6 +117,11 @@ def _extract_json_object(text: str) -> dict[str, Any] | None:
 
 
 class DiscussionTurnService:
+    """负责单轮讨论推进的核心服务。
+
+    它把 Prompt 构建、模型调用、工具事件、结构化状态更新和报告生成串成完整闭环。
+    """
+
     def __init__(
         self,
         *,
@@ -129,6 +134,10 @@ class DiscussionTurnService:
         self.tool_factory = tool_factory or LangGraphToolFactory()
 
     async def agent_turn_node(self, state: dict[str, Any]) -> dict[str, Any]:
+        """执行一个 Agent 的发言节点。
+
+        主要步骤：装载 Agent -> 准备私有记忆 -> 构建 Prompt -> 调用模型/工具 -> 产出 history 与 patch。
+        """
         run_id = state["run_id"]
         round_no = state["round_no"]
         agent_id = state["discussion_agent_ids"][state["agent_index"]]
@@ -216,6 +225,7 @@ class DiscussionTurnService:
         }
 
     async def force_continue_node(self, state: dict[str, Any]) -> dict[str, Any]:
+        """在未达到最小讨论轮数时，跳过模型主持人并用规则继续推进。"""
         premerged_state, pending_patches, patch_log = _apply_safe_state_patch_candidates(state)
         decision = ModeratorDecision(
             finished=False,
@@ -265,6 +275,7 @@ class DiscussionTurnService:
         }
 
     async def moderator_turn_node(self, state: dict[str, Any]) -> dict[str, Any]:
+        """执行主持人节点，并把裁决合并回结构化状态。"""
         moderator = await self.persistence.load_agent(state["moderator_agent_id"])
         if not moderator:
             raise ValueError(f"Moderator not found: {state['moderator_agent_id']}")
@@ -296,6 +307,7 @@ class DiscussionTurnService:
             structured_state=structured_state,
             round_no=effective_state["round_no"],
         )
+        # 冲突提案如果没有被主持人明确化解，会被抬升为下一轮必须处理的焦点。
         unresolved_conflicts, unresolved_conflict_details, unresolved_patch_log = _resolve_unresolved_conflicts(
             remaining_patches,
             structured_state=structured_state,
@@ -343,6 +355,7 @@ class DiscussionTurnService:
         }
 
     async def report_node(self, state: dict[str, Any]) -> dict[str, Any]:
+        """生成最终报告并把 Run 置为 finished。"""
         title, markdown, conclusion = build_final_report(
             session_name=state["session_name"],
             topic=state["topic"],
@@ -472,6 +485,7 @@ class DiscussionTurnService:
         )
 
     async def _invoke_agent_turn(self, agent: AgentConfig, *, run_id: str, workspace_root: str, round_no: int, prompt: str) -> tuple[str, list[dict[str, Any]]]:
+        """真正调用 Agent 模型执行单轮发言，并收集工具副作用摘要。"""
         private_tool_updates: list[dict[str, Any]] = []
 
         async def on_started(tool_call_id: str, tool_name: str, tool_input: dict[str, Any]) -> None:
@@ -510,6 +524,7 @@ class DiscussionTurnService:
         )
         provider = agent.model.provider
         if provider.provider_type == "mock":
+            # mock provider 不走真实模型，主要用于本地演示和回归测试。
             return await self._invoke_mock_agent_turn(prompt=prompt, tools=tools), private_tool_updates
 
         model = build_chat_model(provider, agent.model)
@@ -527,6 +542,7 @@ class DiscussionTurnService:
         return _extract_last_ai_text(result.get("messages")), private_tool_updates
 
     async def _invoke_moderator_turn(self, moderator: AgentConfig, state: dict[str, Any]) -> ModeratorDecision:
+        """调用主持人模型生成结构化裁决；超时时回退到本地规则。"""
         provider = moderator.model.provider
         prompt = build_moderator_prompt(
             run_id=state["run_id"],
@@ -583,6 +599,10 @@ class DiscussionTurnService:
         return self.parse_moderator_decision(_message_text(result), state)
 
     def parse_moderator_decision(self, raw_text: str, state: dict[str, Any]) -> ModeratorDecision:
+        """把主持人原始输出解析为稳定的 ModeratorDecision。
+
+        即使模型没有严格按 JSON 返回，也会尽量提取并补齐必要字段。
+        """
         payload = _extract_json_object(raw_text) or {}
         finished_raw = payload.get("finished")
         if isinstance(finished_raw, bool):

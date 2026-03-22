@@ -100,6 +100,10 @@ def _density_penalty_protection(text: str) -> float:
 
 
 def estimate_message_saliency(item: dict[str, Any] | None) -> tuple[float, str]:
+    """估算一条消息在后续上下文中的保留价值。
+
+    返回值包含 saliency 分数和推断出的消息类型，供检索、摘要和裁剪策略复用。
+    """
     payload = dict(item or {})
     text = str(payload.get("text") or "").strip()
     if not text:
@@ -219,6 +223,10 @@ def compose_agent_system_prompt(
     skill_char_limit: int,
     skill_total_char_limit: int,
 ) -> str:
+    """拼装单个 Agent 的 system prompt。
+
+    会把角色、persona、工具、技能、MCP 等运行时能力压缩成一份模型可消费的说明。
+    """
     sections = [agent.system_prompt.strip()]
 
     enabled_skills = [binding.skill for binding in agent.skill_bindings if binding.skill.enabled]
@@ -785,6 +793,10 @@ def format_discussion_context(
     recent_full_message_count: int,
     retrieval_item_limit: int,
 ) -> str:
+    """按预算拼装讨论上下文。
+
+    优先尝试完整历史；超预算时退化为结构化状态 + 最近原文 + 轮次总结 + 老历史召回。
+    """
     if not history and not round_summaries:
         return "暂无历史讨论内容。请先给出你的初步判断，并保持讨论推进的口吻。"
 
@@ -793,6 +805,7 @@ def format_discussion_context(
     structured_block = _fit_section("结构化状态", [_render_structured_state(structured_state)], token_budget=max(200, prompt_token_budget // 4))
 
     full_candidate = "\n\n".join(block for block in [structured_block, full_history_block] if block)
+    # 如果完整历史仍在预算内，优先保留原文，避免过早摘要损失语义。
     if full_history_block and estimate_token_count(full_candidate) <= prompt_token_budget:
         return full_candidate
 
@@ -849,6 +862,10 @@ def build_agent_turn_prompt(
     recent_full_message_count: int,
     retrieval_item_limit: int,
 ) -> str:
+    """生成 Agent 单轮发言 Prompt。
+
+    Prompt 同时包含共享上下文和私有工作记忆，并明确要求先回应上一位发言者。
+    """
     latest = history[-1] if history else None
     latest_hint = (
         f"最近一位发言者是 {latest['agent_name']}，请先回应他的最新观点，再补充你的新增判断。"
@@ -907,6 +924,10 @@ def build_moderator_prompt(
     recent_full_message_count: int,
     retrieval_item_limit: int,
 ) -> str:
+    """生成主持人裁决 Prompt。
+
+    除了常规上下文外，还会附带待审 patch 和冲突裁决指引。
+    """
     context = format_discussion_context(
         history,
         run_id=run_id,
@@ -959,6 +980,7 @@ def build_final_report(
     rounds: int,
     per_message_char_limit: int,
 ) -> tuple[str, str, dict]:
+    """把完整讨论历史压缩成最终报告标题、Markdown 摘要和结构化结论。"""
     transcript = [
         f"- 第 {item['round_no']} 轮 · {item['agent_name']}：{shorten_text(item['text'], per_message_char_limit)}"
         for item in history

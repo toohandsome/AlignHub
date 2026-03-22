@@ -25,6 +25,11 @@ from app.entities import (
 
 
 class RunPersistenceService:
+    """封装 Run 相关数据库读写。
+
+    目标是把执行层和 ORM 细节隔离开，便于生命周期层与节点层复用。
+    """
+
     async def persist_control_state(self, run_id: str, snapshot: dict) -> None:
         async with SessionLocal() as db:
             run = await db.get(DiscussionRun, run_id)
@@ -50,6 +55,7 @@ class RunPersistenceService:
         stop_reason: str | None = None,
         ended: bool = False,
     ) -> None:
+        """持久化 Run 状态，并在需要时同步会话状态和结束时间。"""
         async with SessionLocal() as db:
             run = await db.get(DiscussionRun, run_id)
             if not run:
@@ -66,6 +72,7 @@ class RunPersistenceService:
             await db.commit()
 
     async def mark_run_running(self, run_id: str, *, ensure_started_at: bool = False) -> DiscussionRun | None:
+        """把 Run 切到 running，并确保 started_at / session.status 一致。"""
         async with SessionLocal() as db:
             run = await db.get(DiscussionRun, run_id)
             if not run:
@@ -98,6 +105,7 @@ class RunPersistenceService:
         summary_markdown: str,
         conclusion_json: dict[str, Any],
     ) -> FinalReport:
+        """保存最终报告实体。"""
         async with SessionLocal() as db:
             report = FinalReport(
                 run_id=run_id,
@@ -120,6 +128,7 @@ class RunPersistenceService:
         tool_name: str,
         tool_input: dict[str, Any],
     ) -> None:
+        """记录一次工具调用开始。"""
         async with SessionLocal() as db:
             db.add(
                 ToolCallLog(
@@ -163,6 +172,7 @@ class RunPersistenceService:
             return bool(run and run.status in {"finished", "failed", "stopped"})
 
     async def load_run(self, db: AsyncSession, run_id: str) -> DiscussionRun | None:
+        """按运行时执行所需的关联关系完整装载一个 Run。"""
         res = await db.execute(
             select(DiscussionRun)
             .options(
@@ -252,6 +262,7 @@ class RunPersistenceService:
             return list(res.scalars().all())
 
     async def create_run(self, session_id: str, *, notify_feishu: bool) -> DiscussionRun:
+        """为指定会话创建新的草稿 Run，并阻止并发活动 Run 共存。"""
         async with SessionLocal() as db:
             session = await db.get(ChatSession, session_id)
             if not session:
@@ -288,6 +299,7 @@ class RunPersistenceService:
         stop_reason: str | None = None,
         ended: bool = False,
     ) -> DiscussionRun | None:
+        """按需更新 Run 状态、stop_reason、ended_at 和 session.status。"""
         async with SessionLocal() as db:
             run = await db.get(DiscussionRun, run_id)
             if not run:
@@ -329,6 +341,7 @@ class RunPersistenceService:
             return list(res.scalars().all())
 
     async def delete_run_records(self, run_id: str) -> bool:
+        """删除 Run 关联的报告、工具日志、事件计数器和主体记录。"""
         async with SessionLocal() as db:
             run = await db.get(DiscussionRun, run_id)
             if not run:

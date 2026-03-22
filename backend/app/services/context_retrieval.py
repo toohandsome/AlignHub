@@ -88,6 +88,10 @@ def _load_vec_extension(conn: sqlite3.Connection) -> bool:
 
 
 def _ensure_schema(conn: sqlite3.Connection) -> bool:
+    """确保检索侧车库中的表、FTS 索引和向量表已就绪。
+
+    返回值表示当前连接是否真的可用 sqlite-vec。
+    """
     global _SCHEMA_READY, _SCHEMA_READY_PATH
     with _SCHEMA_LOCK:
         vector_ready = _load_vec_extension(conn)
@@ -160,6 +164,10 @@ def build_hashed_embedding(
     entity_terms: list[str] | None = None,
     anchor_terms: list[str] | None = None,
 ) -> list[float]:
+    """把文本映射成轻量哈希向量。
+
+    这里不依赖外部 embedding 模型，而是用稳定的哈希投影在本地生成可比较的向量。
+    """
     dims = max(16, int(dimensions or settings.discussion_vector_dimensions))
     tokens = [token.strip() for token in (lexical_text or "").split() if token.strip()]
     if not tokens and not entity_terms and not anchor_terms:
@@ -204,6 +212,10 @@ def hybrid_search_chunks(
     excluded_chunk_keys: set[str],
     item_limit: int,
 ) -> list[dict[str, Any]]:
+    """执行混合检索。
+
+    流程为：刷新当前 Run 的检索分块 -> FTS 召回 -> 向量召回 -> 融合排序。
+    """
     if not settings.discussion_hybrid_retrieval_enabled or not run_id or not chunks:
         return []
 
@@ -263,6 +275,7 @@ def purge_run_chunks(run_id: str) -> None:
 
 
 def inspect_retrieval_runtime() -> dict[str, Any]:
+    """探测当前进程下检索能力的真实运行态，供启动日志和诊断接口复用。"""
     status: dict[str, Any] = {
         "hybrid_enabled": bool(settings.discussion_hybrid_retrieval_enabled),
         "vector_requested": bool(settings.discussion_vector_search_enabled),
@@ -344,6 +357,10 @@ def _replace_run_chunks(
     chunks: list[dict[str, Any]],
     vector_ready: bool,
 ) -> None:
+    """用最新的 chunks 完整替换某个 Run 的检索索引。
+
+    该实现选择整批替换而不是增量更新，以降低状态漂移和脏数据残留风险。
+    """
     existing = conn.execute("SELECT id, chunk_key FROM memory_chunks WHERE run_id = ?", (run_id,)).fetchall()
     if existing:
         row_ids = [int(row["id"]) for row in existing]
@@ -525,6 +542,10 @@ def _merge_ranked_hits(
     vector_hits: list[dict[str, Any]],
     limit: int,
 ) -> list[dict[str, Any]]:
+    """融合 FTS 与向量检索结果。
+
+    当前策略显式偏向 lexical 命中，再叠加 saliency、轮次新近性等信号。
+    """
     merged: dict[str, dict[str, Any]] = {}
     lexical_weight = 1.9 + _lexical_priority_boost(query_text, query_terms)
     vector_weight = 1.05

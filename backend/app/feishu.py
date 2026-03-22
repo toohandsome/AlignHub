@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import asyncio
 import logging
@@ -32,6 +32,11 @@ logger = logging.getLogger(__name__)
 
 
 class FeishuBridgeService:
+    """飞书集成门面。
+
+    统一协调命令解析、自动建会话、消息发送、Run 控制以及事件回推。
+    """
+
     def __init__(self) -> None:
         self._token_cache: dict[str, tuple[str, datetime]] = {}
         self._run_manager: RunManager | None = None
@@ -97,6 +102,10 @@ class FeishuBridgeService:
         return await self._callbacks.handle_callback(payload)
 
     async def _handle_message_event(self, event: dict, *, source: dict[str, Any]) -> dict:
+        """处理飞书消息事件。
+
+        核心流程是：识别上下文 -> 查找/自动绑定会话 -> 解析命令 -> 调用 RunManager -> 回写飞书。
+        """
         message = event.get("message", {}) or {}
         sender = event.get("sender", {}) or {}
         conversation = self._callbacks.build_conversation_ref(message)
@@ -128,6 +137,7 @@ class FeishuBridgeService:
             active_run = await self._run_manager.find_active_run_for_session(session.id)
 
         if not command:
+            # 普通文本在已有运行中会被视为“用户补充”，触发软暂停并注入上下文。
             if session and active_run and sender_type == "user" and message_ctx.text and self._run_manager:
                 receipt = await self._record_message(conversation.message_id, conversation.chat_id, "user_input")
                 if not receipt:
@@ -164,6 +174,7 @@ class FeishuBridgeService:
             auto_created = False
             auto_bind_diagnostics: AutoBindDiagnostics | None = None
             if not session or not session.feishu_enabled:
+                # 群聊未绑定时，尝试根据当前群上下文和可用 Agent 自动补齐会话。
                 session, auto_created, auto_bind_diagnostics = await self._autobind.ensure_session_for_binding(
                     conversation,
                     message_ctx=message_ctx,
@@ -281,6 +292,7 @@ class FeishuBridgeService:
                 return {"ok": True, "action": "stop", "run_id": active_run.id}
 
             if command.kind == "start":
+                # start 会重新修正会话 topic / name，再真正创建 Run。
                 if not self._run_manager:
                     raise RuntimeError("RunManager 未绑定")
                 active_run = await self._run_manager.find_active_run_for_session(session.id)
@@ -377,6 +389,7 @@ class FeishuBridgeService:
             return {"ok": False, "error": str(exc), "sender": sender_name}
 
     async def handle_run_event(self, event: dict) -> None:
+        """把运行期事件转交给消息服务，由其决定是否回推飞书。"""
         await self._messaging.handle_run_event(event)
 
     async def send_message(
@@ -389,6 +402,10 @@ class FeishuBridgeService:
         source_kind: str = "host",
         reply_to_message_id: str | None = None,
     ) -> None:
+        """统一的飞书消息发送入口。
+
+        Host Bot、Agent Bot 以及 reply-to 逻辑都在 messaging service 中封装。
+        """
         await self._messaging.send_message(
             chat_id,
             title=title,

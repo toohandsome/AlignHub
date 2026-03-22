@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class ModeratorDecision(BaseModel):
+    """主持人在单轮结束后给出的结构化裁决结果。"""
+
     finished: bool = Field(description="Whether the discussion should finish")
     reason: str | None = Field(default=None)
     next_focus: str | None = Field(default=None)
@@ -57,6 +59,11 @@ class StatePatchProposal(BaseModel):
 
 @dataclass
 class PendingUserInput:
+    """运行时暂存的用户输入。
+
+    这些输入可能来自前端注入，也可能来自飞书群聊消息。
+    """
+
     text: str
     source: str = "user"
     mark_important: bool = False
@@ -65,6 +72,11 @@ class PendingUserInput:
 
 
 class RunControlState:
+    """管理单个 Run 的暂停、恢复、停止和待注入消息。
+
+    该对象只保存“控制面”状态，不负责真正推进 LangGraph 节点。
+    """
+
     def __init__(self, *, on_change: Callable[[dict[str, Any]], Awaitable[None]] | None = None) -> None:
         self._lock = asyncio.Lock()
         self._resume_event = asyncio.Event()
@@ -122,11 +134,16 @@ class RunControlState:
         await self._notify_changed()
 
     async def request_pause(self, *, message: str | None = None, source: str = "user", mark_important: bool = False) -> bool:
+        """请求暂停运行，并把附带消息登记为待注入输入。
+
+        返回值表示这次调用是否真的让运行从“非暂停”进入“暂停”。
+        """
         became_paused = False
         async with self._lock:
             normalized = (message or "").strip()
             if normalized:
                 signature = (source, f"{normalized}|important={int(mark_important)}")
+                # 对同一来源、同一文本的暂停请求做去重，避免飞书重试或重复点击造成重复注入。
                 if self._last_pause_request != signature:
                     self.pending_inputs.append(PendingUserInput(text=normalized, source=source, mark_important=mark_important))
                     self._last_pause_request = signature
@@ -250,6 +267,11 @@ class _EventWriteRequest:
 
 
 class EventService:
+    """统一负责运行事件的落库、广播与监听器分发。
+
+    写库和广播被拆成两个阶段：先持久化，再向 WebSocket/Feishu 等监听器分发。
+    """
+
     def __init__(self, broker: RealtimeBroker) -> None:
         self.broker = broker
         self._listeners: list[Callable[[dict[str, Any]], Any]] = []
@@ -298,6 +320,10 @@ class EventService:
         return int(result.scalar_one())
 
     async def _writer_loop(self) -> None:
+        """后台批量写入事件。
+
+        通过小批次聚合减少数据库提交次数，同时保证事件顺序按队列消费。
+        """
         if self._queue is None:
             return
         stop_after_batch = False
@@ -306,6 +332,7 @@ class EventService:
             if request is None:
                 return
             batch = [request]
+            # 让出一次事件循环，把同一时间片里积累的事件并到同一批次中。
             await asyncio.sleep(0)
             while len(batch) < 100:
                 try:
@@ -321,6 +348,7 @@ class EventService:
                 return
 
     async def _persist_batch(self, batch: list[_EventWriteRequest]) -> None:
+        """把一批事件按 seq 顺序写入数据库，并为等待方返回最终事件对象。"""
         rows: list[tuple[_EventWriteRequest, DiscussionEvent, int]] = []
         try:
             async with SessionLocal() as db:
@@ -394,6 +422,10 @@ class EventService:
         tool_name: str | None = None,
         payload: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        """发布一个运行事件。
+
+        该方法会等待事件完成落库后再继续做监听器分发，保证前端读取到的事件与数据库一致。
+        """
         payload = dict(payload or {})
         await self._ensure_started()
         if self._queue is None:
@@ -415,6 +447,7 @@ class EventService:
         return event
 
     async def save_report(self, run_id: str, title: str, summary_markdown: str, conclusion_json: dict[str, Any]) -> FinalReport:
+        """保存最终报告，并同步广播 report_generated 事件。"""
         async with SessionLocal() as db:
             report = FinalReport(run_id=run_id, title=title, summary_markdown=summary_markdown, conclusion_json=conclusion_json)
             db.add(report)

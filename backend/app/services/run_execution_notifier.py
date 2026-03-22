@@ -8,6 +8,11 @@ from app.runtime_common import EventService
 
 
 class RunExecutionNotifier:
+    """把运行期状态变化翻译成统一事件格式。
+
+    这样上层执行逻辑只需表达“发生了什么”，而不必关心具体事件名和 payload 结构。
+    """
+
     def __init__(self, event_service: EventService) -> None:
         self.event_service = event_service
 
