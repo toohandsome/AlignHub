@@ -44,7 +44,6 @@ export type AgentConfig = {
   memory_strategy: string;
   max_steps: number;
   is_moderator?: boolean;
-  is_reporter?: boolean;
   extra_config_json?: Record<string, unknown>;
   tool_names: string[];
   skill_ids: string[];

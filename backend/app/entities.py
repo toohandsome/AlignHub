@@ -110,7 +110,6 @@ class AgentConfig(Base, TimestampMixin):
     memory_strategy: Mapped[str] = mapped_column(String(32), default="in_memory")
     max_steps: Mapped[int] = mapped_column(Integer, default=6)
     is_moderator: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_reporter: Mapped[bool] = mapped_column(Boolean, default=False)
     extra_config_json: Mapped[dict] = mapped_column(JSON, default=dict)
 
     model: Mapped[ModelConfig] = relationship(back_populates="agents")
@@ -202,6 +201,7 @@ class DiscussionRun(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(32), default="draft")
     current_round: Mapped[int] = mapped_column(Integer, default=0)
     notify_feishu: Mapped[bool] = mapped_column(Boolean, default=True)
+    control_state_json: Mapped[dict] = mapped_column(JSON, default=dict)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     stop_reason: Mapped[str | None] = mapped_column(Text, nullable=True)

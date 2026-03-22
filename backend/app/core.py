@@ -21,10 +21,25 @@ class Settings(BaseSettings):
     mock_discussion_round_cap: int = 2
     min_discussion_rounds: int = 2
     discussion_context_messages: int = 6
+    discussion_agent_prompt_token_budget: int = 3200
+    discussion_moderator_prompt_token_budget: int = 4200
+    discussion_recent_full_messages: int = 6
+    discussion_history_retrieval_items: int = 6
+    discussion_hybrid_retrieval_enabled: bool = True
+    discussion_vector_search_enabled: bool = True
+    discussion_vector_dimensions: int = 128
+    discussion_retrieval_fts_limit: int = 8
+    discussion_retrieval_vector_limit: int = 8
+    discussion_retrieval_sqlite_path: str = str(Path.cwd() / "artifacts" / "discussion_retrieval.sqlite")
     cleanup_run_workspace_on_finish: bool = True
     skill_prompt_char_limit: int = 1200
     skill_prompt_total_char_limit: int = 3200
     report_message_char_limit: int = 400
+    langgraph_debug: bool = False
+    langgraph_checkpoint_path: str = str(Path.cwd() / "artifacts" / "langgraph_checkpoints.sqlite")
+    langgraph_recover_active_runs: bool = True
+    langgraph_moderator_timeout_seconds: int = 20
+    langgraph_mock_response_delay_ms: int = 0
 
     model_config = SettingsConfigDict(env_prefix="APP_", env_file=".env", extra="ignore")
 

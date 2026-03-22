@@ -1,10 +1,11 @@
+from typing import Any
+
 from fastapi import Request
 
 from app.feishu import FeishuBridgeService
-from app.runtime import RunManager
 
 
-def get_run_manager(request: Request) -> RunManager:
+def get_run_manager(request: Request) -> Any:
     return request.app.state.run_manager
 
 

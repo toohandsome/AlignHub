@@ -11,6 +11,8 @@ from app.services.artifacts import (
     unique_artifact_dir,
 )
 from app.services.bindings import (
+    ensure_agent_ids_have_explicit_moderator,
+    ensure_session_has_explicit_moderator,
     load_agent,
     load_session,
     sync_agent_mcps,
@@ -45,6 +47,8 @@ __all__ = [
     "delete_and_commit_or_409",
     "derive_skill_description",
     "derive_skill_name",
+    "ensure_agent_ids_have_explicit_moderator",
+    "ensure_session_has_explicit_moderator",
     "ensure_unique_name",
     "event_to_read",
     "feishu_agent_bot_to_read",

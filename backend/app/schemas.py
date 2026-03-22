@@ -82,7 +82,6 @@ class AgentCreate(BaseModel):
     memory_strategy: str = "in_memory"
     max_steps: int = Field(default=6, ge=1, le=32)
     is_moderator: bool = False
-    is_reporter: bool = False
     extra_config_json: dict = Field(default_factory=dict)
     tool_names: list[str] = Field(default_factory=list)
     skill_ids: list[str] = Field(default_factory=list)
@@ -98,7 +97,6 @@ class AgentUpdate(BaseModel):
     memory_strategy: str | None = None
     max_steps: int | None = Field(default=None, ge=1, le=32)
     is_moderator: bool | None = None
-    is_reporter: bool | None = None
     extra_config_json: dict | None = None
     tool_names: list[str] | None = None
     skill_ids: list[str] | None = None
@@ -115,7 +113,6 @@ class AgentRead(BaseModel):
     memory_strategy: str
     max_steps: int
     is_moderator: bool
-    is_reporter: bool
     extra_config_json: dict
     tool_names: list[str]
     skill_ids: list[str]
@@ -216,12 +213,14 @@ class MCPInvokeTestRequest(BaseModel):
 class RunControlRequest(BaseModel):
     message: str | None = None
     source: str = "user"
+    mark_important: bool = False
 
 
 class RunUserInputRequest(BaseModel):
     message: str = Field(min_length=1)
     source: str = "user"
     pause: bool = False
+    mark_important: bool = False
 
 
 class ChatSessionCreate(BaseModel):

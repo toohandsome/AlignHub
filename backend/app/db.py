@@ -75,14 +75,25 @@ async def _ensure_sqlite_columns(conn: AsyncConnection) -> None:
         statements.append("ALTER TABLE chat_sessions ADD COLUMN feishu_enabled BOOLEAN DEFAULT 0")
     if not await has_column("discussion_runs", "notify_feishu"):
         statements.append("ALTER TABLE discussion_runs ADD COLUMN notify_feishu BOOLEAN DEFAULT 1")
+    if not await has_column("discussion_runs", "control_state_json"):
+        statements.append("ALTER TABLE discussion_runs ADD COLUMN control_state_json JSON DEFAULT '{}'")
     if not await has_column("tool_call_logs", "call_id"):
         statements.append("ALTER TABLE tool_call_logs ADD COLUMN call_id VARCHAR(128)")
 
     for stmt in statements:
         await conn.execute(text(stmt))
 
+    if await has_column("agent_configs", "is_reporter"):
+        try:
+            await conn.execute(text("ALTER TABLE agent_configs DROP COLUMN is_reporter"))
+        except Exception as exc:
+            logger.warning("Skipping removal of deprecated agent_configs.is_reporter column: %s", exc)
+
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_sessions_feishu_binding ON chat_sessions(feishu_chat_id, feishu_topic_root_id)"))
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_discussion_runs_session_status_created ON discussion_runs(session_id, status, created_at)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_discussion_events_run_seq ON discussion_events(run_id, seq)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_discussion_events_run_created ON discussion_events(run_id, created_at)"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_final_reports_run_created ON final_reports(run_id, created_at DESC)"))
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tool_call_logs_run_started ON tool_call_logs(run_id, started_at)"))
     await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_tool_call_logs_run_call_id ON tool_call_logs(run_id, call_id)"))
     try:

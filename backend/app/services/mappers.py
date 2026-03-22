@@ -56,7 +56,6 @@ def agent_to_read(row: AgentConfig) -> AgentRead:
         memory_strategy=row.memory_strategy,
         max_steps=row.max_steps,
         is_moderator=row.is_moderator,
-        is_reporter=row.is_reporter,
         extra_config_json=row.extra_config_json,
         tool_names=[binding.tool.name for binding in row.tool_bindings],
         skill_ids=[binding.skill.id for binding in row.skill_bindings],

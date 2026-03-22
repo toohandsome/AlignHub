@@ -29,7 +29,7 @@ async def bootstrap_demo():
             )
         ).scalar_one_or_none()
         if not model:
-            model = ModelConfig(provider_id=provider.id, model_name="mock-gpt", temperature=0.3, max_tokens=600, formatter_type="openai_multi_agent")
+            model = ModelConfig(provider_id=provider.id, model_name="mock-gpt", temperature=0.3, max_tokens=600, formatter_type="auto")
             db.add(model)
             await commit_or_409(db, entity_name="model")
             await db.refresh(model)
@@ -40,25 +40,28 @@ async def bootstrap_demo():
                 "架构师",
                 "你是一名软件架构师，关注系统边界、模块划分、可扩展性，并在必要时调用工具验证结论。",
                 ["topic_probe", "list_files", "read_file", "git_status", "git_diff"],
+                True,
             ),
             (
                 "Backend Engineer",
                 "后端工程师",
                 "你是一名后端工程师，关注 API、数据模型、并发、稳定性，并在必要时调用工具检查文件与 Git 状态。",
                 ["list_files", "read_file", "write_file", "edit_file", "git_status", "git_diff", "git_log"],
+                False,
             ),
             (
                 "Product Manager",
                 "产品经理",
                 "你是一名产品经理，关注用户价值、范围控制、交付优先级，必要时调用 topic_probe 理清讨论焦点。",
                 ["topic_probe"],
+                False,
             ),
         ]
         agent_ids = []
-        for name, role, prompt, tools in specs:
+        for name, role, prompt, tools, is_moderator in specs:
             agent = await _load_agent_by_name(db, name)
             if not agent:
-                agent = AgentConfig(name=name, role=role, persona=role, system_prompt=prompt, model_id=model.id)
+                agent = AgentConfig(name=name, role=role, persona=role, system_prompt=prompt, model_id=model.id, is_moderator=is_moderator)
                 db.add(agent)
                 await flush_or_409(db, entity_name="agent")
             else:
@@ -66,6 +69,7 @@ async def bootstrap_demo():
                 agent.persona = role
                 agent.system_prompt = prompt
                 agent.model_id = model.id
+                agent.is_moderator = is_moderator
             await sync_agent_tools(db, agent.id, tools)
             agent_ids.append(agent.id)
         await commit_or_409(db, entity_name="agent")

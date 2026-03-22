@@ -1,11 +1,11 @@
 {
-  "name": "agentscope-multi-agent-frontend",
+  "name": "alignhub-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3002",
+    "dev": "next dev --port 3003",
     "build": "next build",
-    "start": "next start --port 3002"
+    "start": "next start --port 3003"
   },
   "dependencies": {
     "next": "^16.1.6",
@@ -20,6 +20,6 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3"
+    "typescript": "5.9.3"
   }
 }

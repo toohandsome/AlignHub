@@ -1,4 +1,4 @@
-import { AgentConfig, ModelConfig } from "@/lib/api";
+﻿import { AgentConfig, DiscussionEvent, ModelConfig } from "@/lib/api";
 
 export type EventFilterKey = "message" | "tool" | "status" | "report";
 
@@ -21,10 +21,6 @@ export type AgentDirectory = Record<
   }
 >;
 
-/**
- * 把 Agent 与 Model 信息组装成便于页面快速查询的字典。
- * 这样在时间线、历史页、会话页里都能 O(1) 取到展示文案。
- */
 export function buildAgentDirectory(agents: AgentConfig[], models: ModelConfig[]): AgentDirectory {
   const modelMap = Object.fromEntries(models.map((model) => [model.id, model]));
 
@@ -44,10 +40,6 @@ export function buildAgentDirectory(agents: AgentConfig[], models: ModelConfig[]
   );
 }
 
-/**
- * 将底层事件类型归并为页面筛选维度。
- * 这样不同页面都能复用同一套筛选逻辑。
- */
 export function categorizeEventType(eventType: string): EventFilterKey {
   if (eventType === "message_completed" || eventType === "user_input") return "message";
   if (eventType.startsWith("tool_")) return "tool";
@@ -55,16 +47,10 @@ export function categorizeEventType(eventType: string): EventFilterKey {
   return "status";
 }
 
-/**
- * 判断某条事件在当前筛选条件下是否需要展示。
- */
 export function isEventVisible(eventType: string, selectedFilters: EventFilterKey[]): boolean {
   return selectedFilters.includes(categorizeEventType(eventType));
 }
 
-/**
- * 把事件类型转换成人可读标签，避免页面直接展示底层枚举值。
- */
 export function eventTypeLabel(eventType: string): string {
   switch (eventType) {
     case "message_completed":
@@ -88,10 +74,6 @@ export function eventTypeLabel(eventType: string): string {
   }
 }
 
-/**
- * 为事件生成一段简洁摘要，用于时间线卡片和回放页摘要展示。
- * 对于结构化状态事件，会把 reason / next_focus 这类关键字段拼进文案。
- */
 export function summarizeEvent(event: {
   event_type: string;
   payload: Record<string, unknown>;
@@ -99,12 +81,15 @@ export function summarizeEvent(event: {
   round_no: number;
 }): string {
   const payload = event.payload ?? {};
+  const metadata = typeof payload.metadata === "object" && payload.metadata !== null ? (payload.metadata as Record<string, unknown>) : {};
 
   switch (event.event_type) {
     case "message_completed":
       return String(payload.text ?? "");
-    case "user_input":
-      return `用户补充：${String(payload.text ?? "")}`;
+    case "user_input": {
+      const important = metadata.mark_important === true;
+      return `${important ? "用户重点关注" : "用户补充"}：${String(payload.text ?? "")}`;
+    }
     case "tool_started":
       return `开始调用 ${event.tool_name ?? "工具"}`;
     case "tool_completed":
@@ -124,7 +109,7 @@ export function summarizeEvent(event: {
         stopped: "已停止",
         finished: "已完成",
         round_started: "轮次开始",
-        moderator_decision: "主持判断"
+        moderator_decision: "主持人裁决"
       };
       const display = labelMap[status] ?? status;
       const reason = payload.reason ? ` · ${String(payload.reason)}` : "";
@@ -136,12 +121,6 @@ export function summarizeEvent(event: {
   }
 }
 
-/**
- * 统一解析 Agent 展示信息：
- * - 优先使用目录中的正式配置
- * - 兜底使用事件载荷中的 agent_name
- * - 最终返回可直接给头像和标签组件使用的数据
- */
 export function resolveAgentDisplay(
   directory: AgentDirectory,
   agentId?: string | null,
@@ -161,4 +140,15 @@ export function resolveAgentDisplay(
     modelName: matched?.modelName,
     seed: agentId ?? name
   };
+}
+
+export function latestStructuredStatePreview(events: Array<DiscussionEvent & { payload?: Record<string, unknown> }>) {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const payload = (events[index].payload ?? events[index].payload_json ?? {}) as Record<string, unknown>;
+    const state = payload.structured_state;
+    if (typeof state === "object" && state !== null) {
+      return state as Record<string, unknown>;
+    }
+  }
+  return null;
 }

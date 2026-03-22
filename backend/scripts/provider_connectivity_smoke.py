@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT))
 
 from app.core import SecretCodec  # noqa: E402
 from app.entities import ModelConfig, ProviderConfig  # noqa: E402
-from app.runtime import test_model_connection  # noqa: E402
+from app.services.runtime_probes import test_model_connection  # noqa: E402
 
 
 def build_provider(provider_type: str, name: str, *, api_key: str | None = None, base_url: str | None = None, organization: str | None = None) -> ProviderConfig:
@@ -39,7 +39,7 @@ async def main() -> None:
     matrix: list[tuple[str, ProviderConfig, ModelConfig]] = []
 
     mock_provider = build_provider("mock", "mock-live")
-    matrix.append(("mock", mock_provider, build_model(mock_provider, "mock-gpt", formatter_type="openai_multi_agent")))
+    matrix.append(("mock", mock_provider, build_model(mock_provider, "mock-gpt", formatter_type="auto")))
 
     if os.getenv("OPENAI_API_KEY"):
         provider = build_provider("openai", "openai-live", api_key=os.getenv("OPENAI_API_KEY"), organization=os.getenv("OPENAI_ORG"))

@@ -1,6 +1,6 @@
 # AlignHub
 
-**AlignHub** 是一个基于 **AgentScope MsgHub** 的多智能体协同、共识收敛与联合决策平台，提供：
+**AlignHub** 是一个基于 **LangGraph** 的多智能体协同、共识收敛与联合决策平台，提供：
 
 - Provider / Model 配置管理
 - Agent、Tool、Skill、MCP 装配
@@ -49,7 +49,7 @@ Agent 支持以下配置：
 - 绑定 Model
 - `memory_strategy`
 - `max_steps`
-- Moderator / Reporter 标记
+- Moderator 标记
 - Tool / Skill / MCP 挂载
 - 独立 Feishu Agent Bot 绑定
 
@@ -149,6 +149,9 @@ MCP 支持：
 - 默认在结束后自动清理运行工作区
 - 支持运行过程中软中断并注入用户输入
 - 支持最终报告汇总
+- 讨论上下文采用“完整原文优先 + token 感知裁剪 + 最近原文 + 轮次总结 + 结构化状态 + 老历史检索”
+- 不再对单条历史消息做半句式硬截断，优先保留完整原文
+- 主持人每轮输出结构化结论，供后续轮次与最终报告复用
 
 ---
 
@@ -201,7 +204,7 @@ flowchart LR
   A[Frontend / Next.js] --> B[FastAPI API]
   B --> C[RunManager]
   C --> D[Discussion Engine]
-  D --> E[AgentScope MsgHub]
+  D --> E[LangGraph StateGraph]
   D --> F[Tool Runtime]
   D --> G[MCP Runtime]
   D --> H[Model Runtime]
@@ -217,12 +220,16 @@ flowchart LR
 
 - `routes/`
   - API 路由层
-- `runtime.py`
-  - 运行控制、讨论执行、事件落库
-- `services/runtime_models.py`
-  - Provider / Model 运行时适配
+- `runtime_langgraph.py`
+  - LangGraph 运行控制、讨论执行、Checkpoint / 恢复，以及轮次总结 / 结构化状态维护
+- `runtime_common.py`
+  - 运行控制状态、事件落库、主持人结构化裁决模型与共享编排能力
+- `services/langgraph_models.py`
+  - LangChain / LangGraph 模型适配
+- `services/builtin_tools.py`
+  - 内置工具同步与注册
 - `services/discussion_prompts.py`
-  - Prompt 组装与压缩
+  - 分层讨论上下文组装、Token 估算、老历史检索与最终报告拼装
 - `services/mcp_runtime.py`
   - MCP 连接、调用、预览
 - `services/workspace.py`
@@ -253,44 +260,80 @@ flowchart LR
 
 ---
 
+### 2.4 讨论上下文策略
+
+当前讨论上下文采用：**完整原文优先 + token 感知裁剪 + 最近原文 + 轮次总结 + 结构化状态 + 老历史检索**。
+
+执行顺序如下：
+
+1. 先尝试把完整历史原文直接注入 Prompt。
+2. 如果超出 Token 预算，则退化为分层上下文：
+   - `structured_state`：主题、轮次进度、共识、待确认问题、候选方案、风险等结构化状态
+   - 最近若干条完整原文消息
+   - 最近几轮主持人总结 `round_summaries`
+   - 基于主题、最近发言和结构化状态检索出的较老历史片段
+3. Agent 与 Moderator 使用独立 Prompt Token 预算，降低长讨论场景下的上下文膨胀风险。
+4. 单条消息不再做半句式硬截断，避免模型误判“会话被截断”。
+
+主持人当前会输出结构化字段：
+
+- `key_points`
+- `agreements`
+- `disagreements`
+- `open_questions`
+- `candidate_options`
+- `risks`
+
+最终报告会同时包含：
+
+- 当前累积的 `structured_state`
+- 每轮主持人结论 `round_summaries`
+- 按轮次整理的讨论摘录
+
+---
+
 ## 3. 目录结构
 
 ```text
 .
-├── backend/
-│   ├── app/
-│   │   ├── api.py
-│   │   ├── core.py
-│   │   ├── db.py
-│   │   ├── entities.py
-│   │   ├── feishu.py
-│   │   ├── main.py
-│   │   ├── runtime.py
-│   │   ├── schemas.py
-│   │   ├── tools.py
-│   │   ├── routes/
-│   │   └── services/
-│   │       ├── discussion_prompts.py
-│   │       ├── feishu_auth.py
-│   │       ├── feishu_autobind.py
-│   │       ├── feishu_callbacks.py
-│   │       ├── feishu_commands.py
-│   │       ├── feishu_messaging.py
-│   │       ├── feishu_models.py
-│   │       ├── mcp_runtime.py
-│   │       ├── runtime_models.py
-│   │       ├── runtime_probes.py
-│   │       └── workspace.py
-│   ├── artifacts/
-│   ├── requirements.txt
-│   └── README.md
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── lib/
-│   └── package.json
-├── FEISHU_SETUP.md
-└── README.md
+|- backend/
+|  |- app/
+|  |  |- api.py
+|  |  |- core.py
+|  |  |- db.py
+|  |  |- entities.py
+|  |  |- feishu.py
+|  |  |- main.py
+|  |  |- runtime_common.py
+|  |  |- runtime_langgraph.py
+|  |  |- schemas.py
+|  |  |- routes/
+|  |  `- services/
+|  |     |- builtin_tools.py
+|  |     |- discussion_prompts.py
+|  |     |- feishu_auth.py
+|  |     |- feishu_autobind.py
+|  |     |- feishu_callbacks.py
+|  |     |- feishu_commands.py
+|  |     |- feishu_messaging.py
+|  |     |- feishu_models.py
+|  |     |- langgraph_models.py
+|  |     |- langgraph_tools.py
+|  |     |- mcp_runtime.py
+|  |     |- runtime_probes.py
+|  |     `- workspace.py
+|  |- artifacts/
+|  |- requirements.txt
+|  `- README.md
+|- frontend/
+|  |- app/
+|  |- components/
+|  |- features/
+|  |- lib/
+|  `- package.json
+|- FEISHU_SETUP.md
+|- LICENSE
+`- README.md
 ```
 
 ---
@@ -303,7 +346,7 @@ flowchart LR
 - FastAPI
 - SQLAlchemy 2.x
 - SQLite / aiosqlite
-- AgentScope
+- LangGraph / LangChain
 - pydantic-settings
 - WebSocket
 
@@ -346,6 +389,25 @@ cd backend
 
 - API Base: `http://127.0.0.1:8000/api/v1`
 - Health: `http://127.0.0.1:8000/healthz`
+
+后端启动日志会额外输出讨论检索运行态，例如：
+
+- `mode=hybrid_fts_vector fts=on vector=on`
+- `mode=fts_only fts=on vector=off`
+
+用于确认当前环境下 `sqlite-vec` 是否真正启用，若不可用则会自动回退到 FTS / 词项检索。
+
+当前多智能体上下文管理还包含两项观测增强：
+
+- Saliency 采用阶段感知动态权重：前期偏重问题/风险，后期偏重结论/共识
+- Density Penalty 对长代码块 / JSON / 配置片段增加白名单保护，避免高信息密度技术内容被误降权
+- `state_patch_log` 会记录 Moderator adoption rate，便于分析某类 Agent Patch 是否长期不被采纳
+- Semantic TTL 会在讨论后期更积极归档低优先级旧问题
+- 混合检索对 FTS 保持更高权重；对错误码、模块名、路径等精确术语会进一步偏向 lexical 命中
+- `conflicted` patch 会在 Moderator Prompt 中附带冲突裁决模板，要求结合相关轮次原文做最终判定
+- 若 Moderator 仍未对冲突补丁作出清晰裁决，运行时会挂起为 `unresolved_conflict` 并置顶到下一轮焦点
+- `user_input` 支持 `mark_important=true`，可把用户手动标记的重要消息提升为长期驻留关注点
+- 前端实时讨论页支持点击历史消息直接“设为重点”，并支持展开查看未解决冲突详情
 
 ---
 
@@ -392,7 +454,11 @@ NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000/api/v1
 | `APP_ARTIFACT_ROOT` | `<cwd>/artifacts` | Skill / MCP / workspace 产物根目录 |
 | `APP_MOCK_DISCUSSION_ROUND_CAP` | `2` | mock 讨论轮数上限 |
 | `APP_MIN_DISCUSSION_ROUNDS` | `2` | 最小讨论轮数 |
-| `APP_DISCUSSION_CONTEXT_MESSAGES` | `6` | 注入讨论上下文的历史消息数 |
+| `APP_DISCUSSION_CONTEXT_MESSAGES` | `6` | 旧版固定历史窗口参数（兼容保留，当前分层上下文策略不再依赖） |
+| `APP_DISCUSSION_AGENT_PROMPT_TOKEN_BUDGET` | `3200` | Agent 讨论 Prompt 的 Token 预算 |
+| `APP_DISCUSSION_MODERATOR_PROMPT_TOKEN_BUDGET` | `4200` | 主持人 Prompt 的 Token 预算 |
+| `APP_DISCUSSION_RECENT_FULL_MESSAGES` | `6` | 分层上下文中保留的最近完整原文消息数 |
+| `APP_DISCUSSION_HISTORY_RETRIEVAL_ITEMS` | `6` | 从较老历史中检索回填的片段数量上限 |
 | `APP_CLEANUP_RUN_WORKSPACE_ON_FINISH` | `true` | Run 结束后自动清理工作区 |
 | `APP_SKILL_PROMPT_CHAR_LIMIT` | `1200` | 单个 Skill Prompt 长度上限 |
 | `APP_SKILL_PROMPT_TOTAL_CHAR_LIMIT` | `3200` | Skill Prompt 总长度上限 |
@@ -591,7 +657,8 @@ curl -X POST http://127.0.0.1:8000/api/v1/demo/bootstrap
 - Git 工具依赖本机存在 `git`
 - `mock` Provider 主要用于本地开发与演示
 - 运行工作区默认会在结束后清理
-- Prompt 已做压缩，但超长 Skill / MCP 描述仍应控制规模
+- 讨论上下文已改为分层 Token 感知裁剪，但超长 Skill / MCP 描述仍应控制规模
+- `APP_DISCUSSION_CONTEXT_MESSAGES` 为旧版固定窗口参数，兼容保留，不建议作为新的调优入口
 
 ---
 
@@ -620,4 +687,4 @@ curl -X POST http://127.0.0.1:8000/api/v1/demo/bootstrap
 
 ## 15. License
 
-本仓库未单独声明 License，请按你的项目策略补充。
+本仓库的许可信息见根目录 `LICENSE`。

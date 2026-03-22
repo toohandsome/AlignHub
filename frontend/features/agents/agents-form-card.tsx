@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { type FormEvent } from "react";
+import { useMemo } from "react";
 
-import { Card, Input, PrimaryButton, SecondaryButton, SectionTitle, Select, Textarea } from "@/components/ui";
+import { Badge, Card, CheckboxRow, Field, Input, PrimaryButton, SecondaryButton, SectionTitle, Select, Textarea } from "@/components/ui";
 import { MCPServerConfig, ModelConfig, SkillConfig, ToolDef } from "@/lib/api";
+import { focusField, getJsonObjectError } from "@/lib/form-feedback";
 
 import { AgentForm } from "./use-agents-page";
 
@@ -20,8 +21,7 @@ type Props = {
   selectedSkills: Set<string>;
   selectedMcps: Set<string>;
   loading: boolean;
-  error: string;
-  onSubmit: (event: FormEvent) => Promise<void>;
+  onSubmit: () => Promise<void>;
   onReset: () => void;
 };
 
@@ -37,143 +37,181 @@ export function AgentsFormCard({
   selectedSkills,
   selectedMcps,
   loading,
-  error,
   onSubmit,
-  onReset,
+  onReset
 }: Props) {
-  return (
-    <Card>
-      <SectionTitle title={editing ? "编辑 Agent" : "创建 Agent"} desc="补全 memory_strategy / max_steps / Reporter / extra_config_json 等配置项。" />
-      <form onSubmit={onSubmit} className="space-y-3">
-        <Input placeholder="Agent 名称" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <Input placeholder="角色" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} />
-        <Input placeholder="人格 / Persona" value={form.persona} onChange={(e) => setForm({ ...form, persona: e.target.value })} />
-        <Textarea placeholder="System Prompt" value={form.system_prompt} onChange={(e) => setForm({ ...form, system_prompt: e.target.value })} />
+  const errors = useMemo(
+    () => ({
+      name: form.name.trim() ? "" : "请输入 Agent 名称",
+      role: form.role.trim() ? "" : "请输入角色定位",
+      system_prompt: form.system_prompt.trim() ? "" : "请补充 System Prompt",
+      model_id: form.model_id ? "" : "请选择绑定模型",
+      max_steps: form.max_steps > 0 ? "" : "Max Steps 必须大于 0",
+      extra_config_text: getJsonObjectError(form.extra_config_text, "Agent extra_config_json")
+    }),
+    [form]
+  );
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <Select value={form.model_id} onChange={(e) => setForm({ ...form, model_id: e.target.value })}>
-            <option value="">选择模型</option>
-            {models.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.model_name}
-              </option>
-            ))}
-          </Select>
-          <Select value={form.memory_strategy} onChange={(e) => setForm({ ...form, memory_strategy: e.target.value })}>
-            <option value="in_memory">in_memory</option>
-          </Select>
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    const firstError = Object.entries(errors).find(([, value]) => value)?.[0];
+    if (firstError) {
+      focusField(firstError);
+      return;
+    }
+    await onSubmit();
+  }
+
+  return (
+    <Card className="lg:sticky lg:top-8">
+      <SectionTitle
+        eyebrow="Agent Builder"
+        title={editing ? "编辑 Agent" : "创建 Agent"}
+        desc="补全角色定位、主持人属性、工具 / Skill / MCP 组合与额外配置，减少跳转步骤。"
+        actions={<Badge tone={form.is_moderator ? "warn" : "default"}>{form.is_moderator ? "Moderator" : "Participant"}</Badge>}
+      />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Field label="Agent 名称" required error={errors.name}>
+          <Input name="name" placeholder="例如：产品策略主持人" value={form.name} invalid={Boolean(errors.name)} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        </Field>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="角色" required error={errors.role}>
+            <Input name="role" placeholder="例如：Moderator / Analyst" value={form.role} invalid={Boolean(errors.role)} onChange={(e) => setForm({ ...form, role: e.target.value })} />
+          </Field>
+          <Field label="人格 / Persona">
+            <Input name="persona" placeholder="例如：冷静、结构化、追求结论" value={form.persona} onChange={(e) => setForm({ ...form, persona: e.target.value })} />
+          </Field>
         </div>
 
-        <Input type="number" min={1} max={32} value={form.max_steps} onChange={(e) => setForm({ ...form, max_steps: Number(e.target.value || 1) })} placeholder="Max Steps" />
+        <Field label="System Prompt" required error={errors.system_prompt}>
+          <Textarea name="system_prompt" placeholder="定义角色职责、输出风格与决策边界" value={form.system_prompt} invalid={Boolean(errors.system_prompt)} onChange={(e) => setForm({ ...form, system_prompt: e.target.value })} />
+        </Field>
 
-        <label className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-3 text-sm text-[var(--text)]">
-          <input type="checkbox" checked={form.is_moderator} onChange={(event) => setForm({ ...form, is_moderator: event.target.checked })} />
-          <div className="min-w-0">
-            <div>将该 Agent 作为 Moderator</div>
-            <div className="text-xs text-[var(--muted)]">主持人负责判断讨论是否收敛并决定是否继续下一轮。</div>
-          </div>
-        </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="绑定模型" required error={errors.model_id}>
+            <Select name="model_id" value={form.model_id} invalid={Boolean(errors.model_id)} onChange={(e) => setForm({ ...form, model_id: e.target.value })}>
+              <option value="">选择模型</option>
+              {models.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.model_name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Memory Strategy">
+            <Select name="memory_strategy" value={form.memory_strategy} onChange={(e) => setForm({ ...form, memory_strategy: e.target.value })}>
+              <option value="in_memory">in_memory</option>
+            </Select>
+          </Field>
+        </div>
 
-        <label className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-3 text-sm text-[var(--text)]">
-          <input type="checkbox" checked={form.is_reporter} onChange={(event) => setForm({ ...form, is_reporter: event.target.checked })} />
-          <div className="min-w-0">
-            <div>将该 Agent 标记为 Reporter</div>
-            <div className="text-xs text-[var(--muted)]">当前后端仍以系统报告生成器为主，但保留 Reporter 配置以保持模型定义完整。</div>
-          </div>
-        </label>
+        <Field label="Max Steps" error={errors.max_steps}>
+          <Input name="max_steps" type="number" min={1} max={32} value={form.max_steps} invalid={Boolean(errors.max_steps)} onChange={(e) => setForm({ ...form, max_steps: Number(e.target.value || 1) })} />
+        </Field>
 
-        <Textarea
-          placeholder='Agent extra_config_json，例如：{"style":"strict"}'
-          value={form.extra_config_text}
-          onChange={(e) => setForm({ ...form, extra_config_text: e.target.value })}
+        <CheckboxRow
+          checked={form.is_moderator}
+          onChange={(checked) => setForm({ ...form, is_moderator: checked })}
+          label="将该 Agent 设为 Moderator"
+          description="主持人负责判断讨论是否收敛、沉淀结构化结论，并决定是否继续下一轮。"
+          badge={<Badge tone={form.is_moderator ? "warn" : "default"}>{form.is_moderator ? "主持中枢" : "普通参与者"}</Badge>}
         />
 
-        <div className="space-y-2">
-          <p className="text-sm text-[var(--muted)]">可用工具</p>
+        <Field label="扩展 JSON" hint="必须是 JSON 对象" error={errors.extra_config_text}>
+          <Textarea
+            name="extra_config_text"
+            placeholder='例如：{"style":"strict","temperature_cap":0.5}'
+            value={form.extra_config_text}
+            invalid={Boolean(errors.extra_config_text)}
+            onChange={(e) => setForm({ ...form, extra_config_text: e.target.value })}
+          />
+        </Field>
+
+        <div className="space-y-3 rounded-[24px] border border-[var(--line)] bg-[var(--panel-2)] p-4">
+          <div>
+            <div className="text-sm font-medium text-[var(--text)]">可用工具</div>
+            <div className="mt-1 text-sm text-[var(--muted)]">勾选后会直接注入到该 Agent 的工具能力集中。</div>
+          </div>
           <div className="grid gap-2">
             {tools.map((tool) => (
-              <label key={tool.id} className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm text-[var(--text)]">
-                <input
-                  type="checkbox"
-                  checked={selectedTools.has(tool.name)}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      tool_names: e.target.checked ? [...form.tool_names, tool.name] : form.tool_names.filter((name) => name !== tool.name),
-                    })
-                  }
-                />
-                <div className="min-w-0">
-                  <div>{tool.name}</div>
-                  <div className="truncate text-xs text-[var(--muted)]">{tool.description}</div>
-                </div>
-              </label>
+              <CheckboxRow
+                key={tool.id}
+                checked={selectedTools.has(tool.name)}
+                onChange={(checked) =>
+                  setForm({
+                    ...form,
+                    tool_names: checked ? [...form.tool_names, tool.name] : form.tool_names.filter((name) => name !== tool.name)
+                  })
+                }
+                label={tool.name}
+                description={tool.description}
+              />
             ))}
           </div>
         </div>
 
-        <div className="space-y-2">
-          <p className="text-sm text-[var(--muted)]">挂载 Skill</p>
+        <div className="space-y-3 rounded-[24px] border border-[var(--line)] bg-[var(--panel-2)] p-4">
+          <div>
+            <div className="text-sm font-medium text-[var(--text)]">挂载 Skill</div>
+            <div className="mt-1 text-sm text-[var(--muted)]">把领域知识和提示模板沉淀到角色能力中。</div>
+          </div>
           <div className="grid gap-2">
             {skills.map((skill) => (
-              <label key={skill.id} className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm text-[var(--text)]">
-                <input
-                  type="checkbox"
-                  checked={selectedSkills.has(skill.id)}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      skill_ids: e.target.checked ? [...form.skill_ids, skill.id] : form.skill_ids.filter((id) => id !== skill.id),
-                    })
-                  }
-                />
-                <div className="min-w-0">
-                  <div>{skill.name}</div>
-                  <div className="truncate text-xs text-[var(--muted)]">{skill.description}</div>
-                </div>
-              </label>
+              <CheckboxRow
+                key={skill.id}
+                checked={selectedSkills.has(skill.id)}
+                onChange={(checked) =>
+                  setForm({
+                    ...form,
+                    skill_ids: checked ? [...form.skill_ids, skill.id] : form.skill_ids.filter((id) => id !== skill.id)
+                  })
+                }
+                label={skill.name}
+                description={skill.description}
+                badge={<Badge tone={skill.enabled ? "success" : "warn"}>{skill.enabled ? "enabled" : "disabled"}</Badge>}
+              />
             ))}
-            {!skills.length ? <p className="text-xs text-[var(--muted)]">暂无 Skill，请先到 Skill 管理页面创建。</p> : null}
+            {!skills.length ? <p className="text-sm text-[var(--muted)]">当前还没有 Skill，可先前往 Skill 管理页面创建。</p> : null}
           </div>
         </div>
 
-        <div className="space-y-2">
-          <p className="text-sm text-[var(--muted)]">挂载 MCP</p>
+        <div className="space-y-3 rounded-[24px] border border-[var(--line)] bg-[var(--panel-2)] p-4">
+          <div>
+            <div className="text-sm font-medium text-[var(--text)]">挂载 MCP</div>
+            <div className="mt-1 text-sm text-[var(--muted)]">用于接入外部工具链或业务系统能力。</div>
+          </div>
           <div className="grid gap-2">
             {mcps.map((mcp) => (
-              <label key={mcp.id} className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm text-[var(--text)]">
-                <input
-                  type="checkbox"
-                  checked={selectedMcps.has(mcp.id)}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      mcp_ids: e.target.checked ? [...form.mcp_ids, mcp.id] : form.mcp_ids.filter((id) => id !== mcp.id),
-                    })
-                  }
-                />
-                <div className="min-w-0">
-                  <div>{mcp.name}</div>
-                  <div className="truncate text-xs text-[var(--muted)]">{mcp.transport_type} · {mcp.description}</div>
-                </div>
-              </label>
+              <CheckboxRow
+                key={mcp.id}
+                checked={selectedMcps.has(mcp.id)}
+                onChange={(checked) =>
+                  setForm({
+                    ...form,
+                    mcp_ids: checked ? [...form.mcp_ids, mcp.id] : form.mcp_ids.filter((id) => id !== mcp.id)
+                  })
+                }
+                label={mcp.name}
+                description={`${mcp.transport_type} · ${mcp.description}`}
+                badge={<Badge tone={mcp.enabled ? "success" : "warn"}>{mcp.enabled ? "enabled" : "disabled"}</Badge>}
+              />
             ))}
-            {!mcps.length ? <p className="text-xs text-[var(--muted)]">暂无 MCP，请先到 MCP 管理页面创建。</p> : null}
+            {!mcps.length ? <p className="text-sm text-[var(--muted)]">当前还没有 MCP，可先前往 MCP 管理页面创建。</p> : null}
           </div>
         </div>
 
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-3 text-sm text-[var(--muted)]">
-          飞书机器人绑定已迁移到{" "}
-          <Link href="/extensions/feishu/bots" className="font-medium text-sky-500 hover:text-sky-400">
-            飞书机器人管理页
+        <div className="rounded-[24px] border border-[var(--line)] bg-[var(--panel-2)] px-4 py-4 text-sm leading-7 text-[var(--muted)]">
+          飞书机器人绑定已迁移到
+          <Link href="/extensions/feishu/bots" className="mx-1 font-medium text-[var(--brand-strong)] hover:opacity-80">
+            飞书机器人管理
           </Link>
-          ，这里仅展示绑定结果。
+          页面，这里专注角色编排与能力装配。
         </div>
 
-        {error ? <p className="text-sm text-rose-500">{error}</p> : null}
         <div className="flex flex-wrap gap-3">
-          <PrimaryButton type="submit" disabled={loading || !form.name || !form.role || !form.system_prompt || !form.model_id}>
-            {loading ? "保存中..." : editing ? "保存修改" : "创建 Agent"}
+          <PrimaryButton type="submit" loading={loading}>
+            {editing ? "保存 Agent" : "创建 Agent"}
           </PrimaryButton>
           {editing ? (
             <SecondaryButton type="button" onClick={onReset}>

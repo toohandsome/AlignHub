@@ -84,3 +84,23 @@ async def sync_session_agents(db: AsyncSession, session_id: str, agent_ids: list
         raise ValueError(f"Agent(s) not found: {', '.join(missing)}")
     for index, agent_id in enumerate(agent_ids, start=1):
         db.add(ChatSessionAgent(session_id=session_id, agent_id=agent_id, speak_order=index))
+
+
+async def ensure_agent_ids_have_explicit_moderator(db: AsyncSession, agent_ids: list[str]) -> None:
+    if not agent_ids:
+        raise ValueError("At least one agent is required.")
+    res = await db.execute(select(AgentConfig.id).where(AgentConfig.id.in_(agent_ids), AgentConfig.is_moderator.is_(True)))
+    moderator_ids = {row[0] for row in res.all()}
+    if not moderator_ids:
+        raise ValueError("At least one selected agent must be explicitly marked as Moderator before starting a discussion.")
+
+
+async def ensure_session_has_explicit_moderator(db: AsyncSession, session_id: str) -> None:
+    res = await db.execute(
+        select(AgentConfig.id)
+        .join(ChatSessionAgent, ChatSessionAgent.agent_id == AgentConfig.id)
+        .where(ChatSessionAgent.session_id == session_id, AgentConfig.is_moderator.is_(True))
+        .limit(1)
+    )
+    if res.scalar_one_or_none() is None:
+        raise ValueError("This chat session has no explicit Moderator. Please mark one participating agent as Moderator first.")

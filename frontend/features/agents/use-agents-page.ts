@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { useToast } from "@/components/ui";
 import { AgentConfig, api, MCPServerConfig, ModelConfig, SkillConfig, ToolDef } from "@/lib/api";
 import { prettyJson, parseJsonObjectText } from "@/lib/json-form";
 import { buildAgentDirectory } from "@/lib/discussion";
@@ -16,7 +17,6 @@ export type AgentForm = {
   memory_strategy: string;
   max_steps: number;
   is_moderator: boolean;
-  is_reporter: boolean;
   tool_names: string[];
   skill_ids: string[];
   mcp_ids: string[];
@@ -32,14 +32,14 @@ export const emptyAgentForm: AgentForm = {
   memory_strategy: "in_memory",
   max_steps: 6,
   is_moderator: false,
-  is_reporter: false,
   tool_names: [],
   skill_ids: [],
   mcp_ids: [],
-  extra_config_text: "{}",
+  extra_config_text: "{}"
 };
 
 export function useAgentsPage() {
+  const { toast } = useToast();
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [models, setModels] = useState<ModelConfig[]>([]);
   const [tools, setTools] = useState<ToolDef[]>([]);
@@ -48,25 +48,35 @@ export function useAgentsPage() {
   const [form, setForm] = useState<AgentForm>(emptyAgentForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [bootstrapping, setBootstrapping] = useState(true);
+  const [busyAgentId, setBusyAgentId] = useState<string | null>(null);
 
-  async function loadAll() {
-    const [agentData, modelData, toolData, skillData, mcpData] = await Promise.all([
-      api.get<AgentConfig[]>("/agents"),
-      api.get<ModelConfig[]>("/models"),
-      api.get<ToolDef[]>("/tools"),
-      api.get<SkillConfig[]>("/skills"),
-      api.get<MCPServerConfig[]>("/mcps"),
-    ]);
-    setAgents(agentData);
-    setModels(modelData);
-    setTools(toolData);
-    setSkills(skillData);
-    setMcps(mcpData);
-    setForm((prev) => ({ ...prev, model_id: prev.model_id || modelData[0]?.id || "" }));
+  async function loadAll(showLoader = false) {
+    if (showLoader) setBootstrapping(true);
+    try {
+      const [agentData, modelData, toolData, skillData, mcpData] = await Promise.all([
+        api.get<AgentConfig[]>("/agents"),
+        api.get<ModelConfig[]>("/models"),
+        api.get<ToolDef[]>("/tools"),
+        api.get<SkillConfig[]>("/skills"),
+        api.get<MCPServerConfig[]>("/mcps")
+      ]);
+      setAgents(agentData);
+      setModels(modelData);
+      setTools(toolData);
+      setSkills(skillData);
+      setMcps(mcpData);
+      setForm((prev) => ({ ...prev, model_id: prev.model_id || modelData[0]?.id || "" }));
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载 Agent 页面数据失败");
+    } finally {
+      if (showLoader) setBootstrapping(false);
+    }
   }
 
   useEffect(() => {
-    loadAll().catch((err) => setError(err.message));
+    void loadAll(true);
   }, []);
 
   const selectedTools = useMemo(() => new Set(form.tool_names), [form.tool_names]);
@@ -92,51 +102,71 @@ export function useAgentsPage() {
     return candidate;
   }
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function onSubmit() {
     setLoading(true);
     setError("");
     try {
       const payload = {
-        name: form.name,
-        role: form.role,
-        persona: form.persona,
-        system_prompt: form.system_prompt,
+        name: form.name.trim(),
+        role: form.role.trim(),
+        persona: form.persona.trim(),
+        system_prompt: form.system_prompt.trim(),
         model_id: form.model_id,
         memory_strategy: form.memory_strategy,
         max_steps: form.max_steps,
         is_moderator: form.is_moderator,
-        is_reporter: form.is_reporter,
         tool_names: form.tool_names,
         skill_ids: form.skill_ids,
         mcp_ids: form.mcp_ids,
-        extra_config_json: parseJsonObjectText(form.extra_config_text, "Agent extra_config_json"),
+        extra_config_json: parseJsonObjectText(form.extra_config_text, "Agent extra_config_json")
       };
       if (form.id) {
         await api.put<AgentConfig>(`/agents/${form.id}`, payload);
       } else {
         await api.post<AgentConfig>("/agents", payload);
       }
+      const savedName = form.name.trim();
       resetForm();
       await loadAll();
+      toast({
+        tone: "success",
+        title: form.id ? "Agent 已更新" : "Agent 已创建",
+        description: `${savedName} 已加入角色列表。`
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "保存失败");
+      const message = err instanceof Error ? err.message : "保存 Agent 失败";
+      setError(message);
+      toast({ tone: "danger", title: "保存 Agent 失败", description: message });
+      throw err;
     } finally {
       setLoading(false);
     }
   }
 
   async function removeAgent(agentId: string) {
-    await api.del(`/agents/${agentId}`);
-    if (form.id === agentId) resetForm();
-    await loadAll();
+    const target = agents.find((item) => item.id === agentId);
+    setBusyAgentId(agentId);
+    try {
+      await api.del(`/agents/${agentId}`);
+      if (form.id === agentId) resetForm();
+      await loadAll();
+      toast({ tone: "success", title: "Agent 已删除", description: target?.name ? `${target.name} 已从角色池移除。` : undefined });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "删除 Agent 失败";
+      setError(message);
+      toast({ tone: "danger", title: "删除 Agent 失败", description: message });
+    } finally {
+      setBusyAgentId(null);
+    }
   }
 
   async function copyAgent(agent: AgentConfig) {
+    setBusyAgentId(agent.id);
     try {
       setError("");
+      const nextName = buildCopyName(agent.name);
       await api.post("/agents", {
-        name: buildCopyName(agent.name),
+        name: nextName,
         role: agent.role,
         persona: agent.persona ?? "",
         system_prompt: agent.system_prompt,
@@ -144,15 +174,19 @@ export function useAgentsPage() {
         memory_strategy: agent.memory_strategy,
         max_steps: agent.max_steps,
         is_moderator: Boolean(agent.is_moderator),
-        is_reporter: Boolean(agent.is_reporter),
         tool_names: [...agent.tool_names],
         skill_ids: [...agent.skill_ids],
         mcp_ids: [...agent.mcp_ids],
-        extra_config_json: agent.extra_config_json ?? {},
+        extra_config_json: agent.extra_config_json ?? {}
       });
       await loadAll();
+      toast({ tone: "success", title: "Agent 已复制", description: `${nextName} 已创建，可直接微调。` });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "复制 Agent 失败");
+      const message = err instanceof Error ? err.message : "复制 Agent 失败";
+      setError(message);
+      toast({ tone: "danger", title: "复制 Agent 失败", description: message });
+    } finally {
+      setBusyAgentId(null);
     }
   }
 
@@ -167,11 +201,10 @@ export function useAgentsPage() {
       memory_strategy: agent.memory_strategy,
       max_steps: agent.max_steps,
       is_moderator: Boolean(agent.is_moderator),
-      is_reporter: Boolean(agent.is_reporter),
       tool_names: [...agent.tool_names],
       skill_ids: [...agent.skill_ids],
       mcp_ids: [...agent.mcp_ids],
-      extra_config_text: prettyJson(agent.extra_config_json ?? {}),
+      extra_config_text: prettyJson(agent.extra_config_json ?? {})
     });
     setError("");
   }
@@ -186,7 +219,8 @@ export function useAgentsPage() {
     setForm,
     loading,
     error,
-    setError,
+    bootstrapping,
+    busyAgentId,
     selectedTools,
     selectedSkills,
     selectedMcps,
@@ -197,7 +231,6 @@ export function useAgentsPage() {
     onSubmit,
     removeAgent,
     copyAgent,
-    startEdit,
-    reload: loadAll,
+    startEdit
   };
 }

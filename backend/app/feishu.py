@@ -25,7 +25,7 @@ from app.services.feishu_messaging import FeishuMessagingService
 from app.services.feishu_models import AutoBindDiagnostics, FeishuConversationRef, ParsedCommand, ParsedMessageContext
 
 if TYPE_CHECKING:
-    from app.runtime import RunManager
+    from app.runtime_langgraph import RunManager
 
 
 logger = logging.getLogger(__name__)

@@ -12,7 +12,10 @@ from app.api import router
 from app.core import RealtimeBroker, settings
 from app.db import init_db
 from app.feishu import FeishuBridgeService
-from app.runtime import EventService, RunManager, sync_builtin_tools
+from app.runtime_common import EventService
+from app.runtime_langgraph import RunManager
+from app.services.builtin_tools import sync_builtin_tools
+from app.services.context_retrieval import log_retrieval_runtime_status
 
 
 def configure_logging() -> None:
@@ -55,17 +58,30 @@ async def lifespan(app: FastAPI):
     """
     await init_db()
     await sync_builtin_tools()
+    log_retrieval_runtime_status(logging.getLogger("app.startup"))
     broker = RealtimeBroker()
     event_service = EventService(broker)
     feishu_bridge = FeishuBridgeService()
     run_manager = RunManager(event_service)
+    await event_service.startup()
     feishu_bridge.bind_run_manager(run_manager)
     event_service.register_listener(feishu_bridge.handle_run_event)
+    startup = getattr(run_manager, "startup", None)
+    if callable(startup):
+        await startup()
     app.state.broker = broker
     app.state.event_service = event_service
     app.state.run_manager = run_manager
     app.state.feishu_bridge = feishu_bridge
-    yield
+    try:
+        yield
+    finally:
+        shutdown = getattr(run_manager, "shutdown", None)
+        if callable(shutdown):
+            await shutdown()
+        event_shutdown = getattr(event_service, "shutdown", None)
+        if callable(event_shutdown):
+            await event_shutdown()
 
 
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
